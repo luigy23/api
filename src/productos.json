@@ -1,0 +1,27 @@
+[
+
+{
+    "titulo": "Pollo Frito",
+    "img": "https://cutt.ly/UXCkzM7",
+    "id": "pollo1",
+    "precio": 26000,
+    "descripcion":"frito frito como tu pito"
+  },
+
+  {
+    "titulo": "Hamburguesa XL",
+    "img": "https://cutt.ly/WXCnRSg",
+    "id": "hamburguesa34",
+    "precio": 15000,
+    "descripcion": "la hamburguesa q te deja obesa "
+  },
+
+  {
+    "titulo": "Hot Dog ",
+    "img": "https://m.media-amazon.com/images/I/71GBQJBNEKL._SL1500_.jpg",
+    "id": "hotdog21",
+    "precio": 10000,
+    "descripcion":"soy un perro bien caliente"
+  }
+
+]
