@@ -9,19 +9,19 @@
   },
 
   {
-    "titulo": "Hamburguesa XL",
-    "img": "https://cutt.ly/WXCnRSg",
+    "titulo": "Big Mac",
+    "img": "https://onx.la/b8777",
     "id": "hamburguesa34",
     "precio": 15000,
-    "descripcion": "la hamburguesa q te deja obesa "
+    "descripcion": "La perfección hecha hamburguesa que te hace agua la boca comienza con dos patties de 100% carne y la salsa Big Mac"
   },
 
   {
-    "titulo": "Hot Dog ",
-    "img": "https://m.media-amazon.com/images/I/71GBQJBNEKL._SL1500_.jpg",
+    "titulo": "Sausage Burrito",
+    "img": "https://onx.la/2e6f3",
     "id": "hotdog21",
     "precio": 10000,
-    "descripcion":"soy un perro bien caliente"
+    "descripcion":"Dale algo picosito a tu mañana con un suave huevo revuelto, salchicha, queso derretido, chiles verdes, y cebollas, todo envuelto en una suave tortilla."
   }
 
 ]
