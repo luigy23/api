@@ -22,6 +22,12 @@ router.get("/productos", (req,res)=>{
     res.json(productos)
 })
 
+router.post("/productos", (req,res)=>{
+    console.log(req.body)
+    productos.push(req.body)
+    
+})
+
 
 
 module.exports = router;

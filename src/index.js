@@ -2,9 +2,7 @@
 const express = require("express")
 const app = require("./app")
 const morgan = require("morgan")
-const cors = require('cors')
-const cron = require("node-cron")
-
+const cors = require("cors")
 
 
 //settings

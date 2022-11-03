@@ -5,7 +5,7 @@
     "img": "https://cutt.ly/UXCkzM7",
     "id": "pollo1",
     "precio": 26000,
-    "descripcion":"frito frito como tu pito"
+    "descripcion":"6 Presas de Pollo + 8 Alitas (Las alitas picantes hot wings equivalen a un trozo de ala) + 2 Pop Med. (Trocitos de pechuga de pollo apanados) + 2 Papas Peq."
   },
 
   {
@@ -22,6 +22,41 @@
     "id": "hotdog21",
     "precio": 10000,
     "descripcion":"Dale algo picosito a tu mañana con un suave huevo revuelto, salchicha, queso derretido, chiles verdes, y cebollas, todo envuelto en una suave tortilla."
+  },
+  {
+    "titulo": "Papas Medianas3 ",
+    "img": "https://cache-backend-mcd.mcdonaldscupones.com/media/image/product$kPX1sAX5/200/200/original?country=co",
+    "id": "papas7",
+    "precio": 10000,
+    "descripcion":"Calientes, crujientes y deliciosas. Disfruta de nuestras papas mundialmente famosas, desde la primera hasta la última.    "
+  },
+  {
+    "titulo": "Papas Medianas2 ",
+    "img": "https://cache-backend-mcd.mcdonaldscupones.com/media/image/product$kPX1sAX5/200/200/original?country=co",
+    "id": "papas0",
+    "precio": 10000,
+    "descripcion":"Calientes, crujientes y deliciosas. Disfruta de nuestras papas mundialmente famosas, desde la primera hasta la última.    "
+  },
+  {
+    "titulo": "Papas Mediana44s ",
+    "img": "https://cache-backend-mcd.mcdonaldscupones.com/media/image/product$kPX1sAX5/200/200/original?country=co",
+    "id": "papas1",
+    "precio": 10000,
+    "descripcion":"Calientes, crujientes y deliciosas. Disfruta de nuestras papas mundialmente famosas, desde la primera hasta la última.    "
+  },
+  {
+    "titulo": "Papas Media55nas ",
+    "img": "https://cache-backend-mcd.mcdonaldscupones.com/media/image/product$kPX1sAX5/200/200/original?country=co",
+    "id": "papas2",
+    "precio": 10000,
+    "descripcion":"Calientes, crujientes y deliciosas. Disfruta de nuestras papas mundialmente famosas, desde la primera hasta la última.    "
+  },
+  {
+    "titulo": "Papas Medi66anas ",
+    "img": "https://cache-backend-mcd.mcdonaldscupones.com/media/image/product$kPX1sAX5/200/200/original?country=co",
+    "id": "papas3",
+    "precio": 10000,
+    "descripcion":"Calientes, crujientes y deliciosas. Disfruta de nuestras papas mundialmente famosas, desde la primera hasta la última.    "
   }
 
 ]
