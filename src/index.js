@@ -5,10 +5,21 @@ const morgan = require("morgan")
 const cors = require("cors")
 
 
-//settings
-app.set("port", process.env.PORT || 4000)
-app.set("json spaces", 2)
 
+const http = require('http');
+const server = http.createServer(app);
+const socketIO = require("socket.io")
+const io =  socketIO(server, {
+    cors: {
+      origin: "*"
+    }
+  });
+
+
+
+//settings
+app.set("port", process.env.PORT || 3636)
+app.set("json spaces", 2)
 //middlewares
 app.use(morgan("dev"));
 app.use(express.json());
@@ -19,6 +30,16 @@ app.use(express.urlencoded({extended:false}))
 app.use(require("./routes/index.js"))
 
 //iniciar server
-app.listen(app.get("port"), ()=>{console.log("server port : "+ 4000)});
+server.listen(app.get("port"), ()=>{
+    console.log("server port : "+ 3636)
 
 
+      
+
+});
+
+
+//iniciar scoket del server
+io.on('connection', (socket) => {
+    console.log('a user connected'+ socket.id);
+  });
