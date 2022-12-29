@@ -30,8 +30,8 @@ app.use(express.urlencoded({extended:false}))
 app.use(require("./routes/index.js"))
 
 //iniciar server
-server.listen(process.env.PORT || 3636, ()=>{
-    console.log("server port : "+ process.env.PORT || 3636)
+server.listen((process.env.PORT || 3636), ()=>{
+    console.log("server port : "+ (process.env.PORT || 3636))
 
 
       
