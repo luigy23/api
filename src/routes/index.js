@@ -3,20 +3,14 @@ const router = Router()
 const con = require('../mysql.js')
 const pedidos = require('../controllers/pedidos.js')
 const productos = require('../productos.json')
-
+const {io} = require('./socketio')
 router.get('/', (req, res) => {
   res.json({ title: 'hola qtal' })
 })
 
-router.get('/test', (req, res) => {
-  const sql = "INSERT INTO `productos` (`codProducto`, `Nombre`, `Descripcion`, `idCategoria`, `Precio`, `Estado`) VALUES ('77', 'sevenUP', '1,5 Litros', '1', '15000', 'Agotado');"
-
-  con.query(sql, function (err, result) {
-    if (err) throw err
-    console.log('Result: ' + result)
-  })
-
-  res.json({ title: 'soy un texto' })
+router.get('/test', async (req, res) => {
+const mesa = await con.actualizarEstadoMesa(req.query.id, req.query.estado)
+res.json(mesa)
 })
 
 router.get('/productos', (req, res) => {
@@ -24,28 +18,57 @@ router.get('/productos', (req, res) => {
 })
 
 router.post('/productos', (req, res) => {
-  console.log(req.body)
+  //console.log(req.body)
   productos.push(req.body)
 })
 
-router.get('/nuevo/pedido', function (req, res) {
-  const sql = 'SELECT * FROM `pedido` '
-  // Agregar más código aquí...
-  con.query(sql, function (err, result) {
-    if (err) throw err
-
-    res.json(result)
+router.post('/nuevo/pedido', async (req, res) =>{
+ 
+  pedidos.nuevoPedido(req.body).then((respuesta)=>{
+    if (respuesta ===1) io.in("meseros").emit("actualizado", true);
+    else console.log("hubo un error=>>>>>", respuesta)
   })
+  
+  
 })
 
 router.get('/pedidos', async function (req, res) {
-  const lista = await pedidos.traerPedidos(req.query.id)
+  const lista = await pedidos.traerPedidos(req.query.id,"Pendiente")
   res.json(lista)
 })
 
-router.get('/prueba', async function (req, res) {
-  const lista = await pedidos.traerPedidos(req.query.id)
-  res.json(lista)
+router.post('/ProductoListo', function(req, res){
+  const {idPedido, codProducto} = req.body
+  pedidos.productoListo(idPedido,codProducto).then(
+    ()=>{io.in("meseros").emit("actualizado", true)}
+    )
+
+ 
+})
+
+router.post('/ProductoCancelado', function(req, res){
+  const {idPedido, codProducto} = req.body
+  pedidos.productoCancelado(idPedido,codProducto)
+  //console.log(req.body)
+  io.in("meseros").emit("actualizado", true);
+})
+router.get('/Estado/Pedido', async function(req, res){
+ 
+ pedidos.actualizarEstadoPedido()
+
+
+ res.json("hola")
+  //console.log(req.body)
+ 
+})
+
+router.get('/sockets', async (req, res) =>{
+  const sockets = await io.fetchSockets().then((socket)=>{
+    res.json("Sockets:"+ socket.length)
+  })
+  //console.log("usuarios conectados: ", sockets.length)
+
+
 })
 
 module.exports = router
