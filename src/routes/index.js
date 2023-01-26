@@ -1,7 +1,8 @@
-const { Router } = require('Express')
+const { Router } = require('express')
 const router = Router()
 const con = require('../mysql.js')
 const pedidos = require('../controllers/pedidos.js')
+const mesas = require("../controllers/mesas")
 const productos = require('../productos.json')
 const {io} = require('./socketio')
 router.get('/', (req, res) => {
@@ -9,8 +10,12 @@ router.get('/', (req, res) => {
 })
 
 router.get('/test', async (req, res) => {
-const mesa = await con.actualizarEstadoMesa(req.query.id, req.query.estado)
-res.json(mesa)
+//const mesa = await con.actualizarEstadoMesa(req.query.id, req.query.estado)
+//res.json(mesa)
+
+const respuesta = await con.test()
+res.json("hola")
+
 })
 
 router.get('/productos', (req, res) => {
@@ -22,45 +27,17 @@ router.post('/productos', (req, res) => {
   productos.push(req.body)
 })
 
-router.post('/nuevo/pedido', async (req, res) =>{
- 
-  pedidos.nuevoPedido(req.body).then((respuesta)=>{
-    if (respuesta ===1) io.in("meseros").emit("actualizado", true);
-    else console.log("hubo un error=>>>>>", respuesta)
-  })
-  
-  
-})
+router.post('/nuevo/pedido', pedidos.nuevoPedido)
 
-router.get('/pedidos', async function (req, res) {
-  const lista = await pedidos.traerPedidos(req.query.id,"Pendiente")
-  res.json(lista)
-})
-
-router.post('/ProductoListo', function(req, res){
-  const {idPedido, codProducto} = req.body
-  pedidos.productoListo(idPedido,codProducto).then(
-    ()=>{io.in("meseros").emit("actualizado", true)}
-    )
-
- 
-})
-
-router.post('/ProductoCancelado', function(req, res){
-  const {idPedido, codProducto} = req.body
-  pedidos.productoCancelado(idPedido,codProducto)
-  //console.log(req.body)
-  io.in("meseros").emit("actualizado", true);
-})
-router.get('/Estado/Pedido', async function(req, res){
- 
- pedidos.actualizarEstadoPedido()
+router.get('/pedidos', pedidos.traerPedidos)
 
 
- res.json("hola")
-  //console.log(req.body)
- 
-})
+router.put('/ProductoListo', pedidos.productoListo)
+router.put('/ProductoCancelado', pedidos.productoCancelado)
+router.put('/Estado/Pedido', pedidos.actualizarEstadoPedido)
+
+router.get('/mesas', mesas.obtenerMesa)
+
 
 router.get('/sockets', async (req, res) =>{
   const sockets = await io.fetchSockets().then((socket)=>{

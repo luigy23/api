@@ -1,4 +1,6 @@
-const { query } = require("express");
+//const util = require('util')
+
+
 const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: "127.0.0.1",
@@ -8,6 +10,7 @@ const connection = mysql.createConnection({
 });
 
 connection.connect();
+
 
 connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
   if (err) throw err;
@@ -69,10 +72,10 @@ function actualizarEstadoPedido(estado, idPedido) {
 }
 async function obtenerDatosPedido(idPedido) {
   const sqlEstado = `SELECT 
-  ped.idPedido, ped.idMesa, pro.Nombre, det.Cantidad, det.Estado 
+  ped.idPedido,
+  ped.idMesa
   FROM pedido 
-  ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto 
-  INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
+  ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido 
   WHERE ped.idPedido=${idPedido} AND det.Estado = "Pendiente";`;
 
   return new Promise((resolve, reject) => {
@@ -119,20 +122,18 @@ function crearProductosPedido(productos, id) {
     connection.query(sqlProductos, values, (err, resultados, campos) => {
       if (err) {
         console.log("hubo un error: ", err);
-        return false; //Retorna como salió el proceso
       } else {
         console.log(`producto: ${producto.id} ID del pedido: ${id}`);
-        return true;
       }
     });
   });
 }
 function estadoProductoPedido(estado, idPedido, codProducto) {
   const sqlActualizar = `UPDATE pedido_productos SET Estado = '${estado}' WHERE pedido_productos.idPedido = ${idPedido} AND pedido_productos.codProducto = '${codProducto}'`;
-  
+
   return new Promise((resolve, reject) => {  
     connection.query(sqlActualizar, function (err, resultados, campos) {
-      if (err) resolve(err);
+      if (err) throw console.error(err);
        else {
         resolve(resultados.affectedRows);
       }
@@ -165,6 +166,27 @@ function actualizarEstadoMesa(idMesa, estado) {
     });
   });
 }
+function traerMesas(idMesa){
+  const sqlTraerMesas = idMesa?`SELECT * FROM mesa WHERE idMesa=${idMesa}`:"SELECT * FROM mesa"
+  return new Promise((resolve, reject) => {
+    connection.query(sqlTraerMesas, function (err, resultados, campos) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+
+}
+
+//METODOS TEST
+function test(){
+   
+  // const sqlQuery = util.promisify(connection.query)
+    //sqlQuery("SELECT 1 + 1 AS solution").then((res)=>console.log("Respuesta de Test: ", res))
+    
+
+}
 
 module.exports = {
   nuevoPedido,
@@ -175,4 +197,6 @@ module.exports = {
   actualizarEstadoPedido,
   obtenerElPedidoDeUnaMesa,
   actualizarEstadoMesa,
+  traerMesas,
+  test
 };
