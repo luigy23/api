@@ -20,4 +20,18 @@ socket.on('disconnect', () => {
   // socket.on('traerPedidos',())
 });
 
-module.exports = { io, server };
+function actualizarPedidos(){
+  io.in("meseros").emit("actualizado", true);
+}
+function actualizarMesas(){
+  io.in("meseros").emit("mesas", true);
+}
+function actualizarProductos(){
+  io.in("meseros").emit("productos",true)
+}
+
+
+
+
+
+module.exports = { io, server, actualizarPedidos, actualizarMesas,actualizarProductos };

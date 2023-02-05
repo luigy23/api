@@ -1,6 +1,5 @@
 //const util = require('util')
 
-
 const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: "127.0.0.1",
@@ -10,7 +9,6 @@ const connection = mysql.createConnection({
 });
 
 connection.connect();
-
 
 connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
   if (err) throw err;
@@ -30,7 +28,7 @@ function nuevoPedido(pedido) {
     null,
     "123",
     fechaActual,
-    "1233",
+    pedido.Total,
     "Pendiente",
   ];
   /// Consulta
@@ -39,7 +37,7 @@ function nuevoPedido(pedido) {
       sqlCrearPedido,
       values,
       function (err, resultados, campos) {
-        if (err) resolve(err);
+        if (err) reject(err);
         else {
           crearProductosPedido(pedido.Productos, resultados.insertId);
           resolve(resultados.affectedRows);
@@ -70,13 +68,13 @@ function actualizarEstadoPedido(estado, idPedido) {
     }
   });
 }
-async function obtenerDatosPedido(idPedido) {
+async function getEstadoPed_Productos(idPedido, estado) {
   const sqlEstado = `SELECT 
   ped.idPedido,
   ped.idMesa
   FROM pedido 
   ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido 
-  WHERE ped.idPedido=${idPedido} AND det.Estado = "Pendiente";`;
+  WHERE ped.idPedido=${idPedido} AND det.Estado = "${estado}";`;
 
   return new Promise((resolve, reject) => {
     connection.query(sqlEstado, function (err, resultados, campos) {
@@ -91,9 +89,64 @@ async function obtenerDatosPedido(idPedido) {
 
 //METODOS PRODUCTOS
 
-function traerProductos(id) {
+function getProductos() {
+  const sqlTraerProductos = `SELECT * FROM productos`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlTraerProductos, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+function udtProducto(producto) {
+ const {nombre, descripcion, precio, estado, imagen, codigo} = producto
+  const sqludtProducto = `UPDATE productos SET 
+  Nombre = '${nombre}', 
+  Descripcion = '${descripcion}',
+  Precio = ${precio},
+  Estado = '${estado}',
+  Imagen = '${imagen}'
+  WHERE productos.codProducto = '${codigo}'`;
+
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqludtProducto, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+function crearProducto(producto) {
+  const {nombre, descripcion, precio, estado, imagen, codigo} = producto
+   const sqludtProducto = `INSERT INTO productos 
+   (codProducto, Nombre, Descripcion, idCategoria, Precio, Imagen, Estado) 
+   VALUES (?, ?, ?, ?, ?, ?, ?)`;
+   const values = [
+    codigo, nombre, descripcion, "1", precio, imagen,
+    estado
+   ]
+ 
+ 
+   return new Promise((resolve, reject) => {
+     connection.query(sqludtProducto, values, function (err, resultados) {
+       if (err) reject(err);
+       else {
+         resolve(resultados);
+       }
+     });
+   });
+ }
+ 
+
+function getProductosPedido(idPedido) {
   const sqlTraerProductos = `SELECT pro.Nombre, det.Cantidad, det.Comentario,det.codProducto, det.Estado FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
-  WHERE ped.idPedido= ${id} ORDER BY Estado DESC`;
+  WHERE ped.idPedido= ${idPedido} ORDER BY Estado DESC`;
 
   return new Promise((resolve, reject) => {
     connection.query(sqlTraerProductos, function (err, resultados, campos) {
@@ -128,18 +181,17 @@ function crearProductosPedido(productos, id) {
     });
   });
 }
-function estadoProductoPedido(estado, idPedido, codProducto) {
+function udtProductoPedido(estado, idPedido, codProducto) {
   const sqlActualizar = `UPDATE pedido_productos SET Estado = '${estado}' WHERE pedido_productos.idPedido = ${idPedido} AND pedido_productos.codProducto = '${codProducto}'`;
 
-  return new Promise((resolve, reject) => {  
+  return new Promise((resolve, reject) => {
     connection.query(sqlActualizar, function (err, resultados, campos) {
       if (err) throw console.error(err);
-       else {
+      else {
         resolve(resultados.affectedRows);
       }
     });
-  })
-
+  });
 }
 
 //METODOS MESA
@@ -166,8 +218,10 @@ function actualizarEstadoMesa(idMesa, estado) {
     });
   });
 }
-function traerMesas(idMesa){
-  const sqlTraerMesas = idMesa?`SELECT * FROM mesa WHERE idMesa=${idMesa}`:"SELECT * FROM mesa"
+function traerMesas(idMesa) {
+  const sqlTraerMesas = idMesa
+    ? `SELECT * FROM mesa WHERE idMesa=${idMesa}`
+    : "SELECT * FROM mesa";
   return new Promise((resolve, reject) => {
     connection.query(sqlTraerMesas, function (err, resultados, campos) {
       if (err) reject(err);
@@ -176,27 +230,71 @@ function traerMesas(idMesa){
       }
     });
   });
-
+}
+function getMesaDePedido(idPedido) {
+  const sqlObtenerId = `SELECT idMesa FROM pedido WHERE idPedido= ${idPedido} ORDER BY Fecha DESC LIMIT 1`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerId, function (err, resultados, campos) {
+      if (err) {
+        throw console.error(err);
+      } else {
+        resolve(resultados[0].idMesa);
+      }
+    });
+  });
+}
+//METODOS TEST
+function test() {
+  // const sqlQuery = util.promisify(connection.query)
+  //sqlQuery("SELECT 1 + 1 AS solution").then((res)=>console.log("Respuesta de Test: ", res))
 }
 
-//METODOS TEST
-function test(){
-   
-  // const sqlQuery = util.promisify(connection.query)
-    //sqlQuery("SELECT 1 + 1 AS solution").then((res)=>console.log("Respuesta de Test: ", res))
-    
+function restablecer() {
+  const mesas = "UPDATE mesa SET Estado = 'Disponible';  ";
+  const borrarPro = "DELETE from pedido_productos;";
+  const borrarPed = " DELETE from pedido;";
+  const contador = "ALTER TABLE pedido AUTO_INCREMENT = 1";
+
+  return new Promise((resolve, reject) => { 
+
+    connection.query(mesas, function (err, resultados, campos) {
+      if (err) {
+        throw console.error(err);
+      } else {
+        connection.query(borrarPro, function (err, resultados, campos) {
+          if (err) throw console.error(err);
+          connection.query(borrarPed, function (err, resultados, campos) {
+            if (err) throw console.error(err);
+            connection.query(contador, function (err, resultados, campos) {
+              if (err) throw console.error(err);
+              resolve(resultados)
+            }
+             
+              )
+          });
+        });
+      }
+    });
+
+
+   })
 
 }
 
 module.exports = {
   nuevoPedido,
   traerPedidos,
-  traerProductos,
-  estadoProductoPedido,
-  obtenerDatosPedido,
+  getProductosPedido,
+  udtProductoPedido,
+  getEstadoPed_Productos,
   actualizarEstadoPedido,
   obtenerElPedidoDeUnaMesa,
   actualizarEstadoMesa,
   traerMesas,
-  test
+  getMesaDePedido,
+  getProductos,
+  udtProducto,
+  crearProducto,
+  test,
+  restablecer,
 };
