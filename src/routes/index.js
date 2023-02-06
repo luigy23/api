@@ -20,7 +20,7 @@ router.post('/productos', upload.single('imagen'), productos.crearProducto)
 
 
 router.get('/', (req, res) => {
-  res.json({ title: 'hola qtal' })
+  res.json({ title: 'servidor actualizado #1' })
 })
 
 router.get('/test', async (req, res) => {

@@ -233,7 +233,7 @@ async function agregarProductosAlPedido(id, productos) {
   productos.forEach(async producto => {
     // Usar una expresión de plantilla para mejorar la legibilidad del código
     const sqlProductos = `
-      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario, Total, Estado)
+      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario,  Estado)
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const values = [
       id,
@@ -241,7 +241,7 @@ async function agregarProductosAlPedido(id, productos) {
       producto.cantidad,
       producto.precio,
       producto.comentario,
-      producto.precio,
+      
       "Pendiente",
     ];
 
