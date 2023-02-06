@@ -234,7 +234,7 @@ async function agregarProductosAlPedido(id, productos) {
     // Usar una expresión de plantilla para mejorar la legibilidad del código
     const sqlProductos = `
       INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario,  Estado)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      VALUES (?, ?, ?, ?, ?, ?)`;
     const values = [
       id,
       producto.id,
