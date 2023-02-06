@@ -4,7 +4,7 @@ const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "",
+  password: "Luigy23.",
   database: "restaurante",
 });
 
@@ -16,7 +16,43 @@ connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
 });
 
 //METODOS PEDIDOS
-function nuevoPedido(pedido) {
+// function nuevoPedido(pedido) {
+//   const fechaActual = new Date(Date.now());
+//   const sqlCrearPedido = `
+//   INSERT INTO pedido (idMesa, Usuario, idCliente, idSede, Fecha, Total, Estado)
+//   VALUES ( ?,?,?,?,?,?,?);
+// `;
+//   const values = [
+//     pedido.Mesa,
+//     pedido.Mesero,
+//     null,
+//     "123",
+//     fechaActual,
+//     pedido.Total,
+//     "Pendiente",
+//   ];
+//   /// Consulta
+//   return new Promise((resolve, reject) => {
+//     connection.query(
+//       sqlCrearPedido,
+//       values,
+//       function (err, resultados, campos) {
+//         if (err) reject(err);
+//         else {
+//           agregarProductosAlPedido( resultados.insertId,pedido.Productos);
+//           resolve(resultados.affectedRows);
+//         }
+//       }
+//     );
+//   });
+//}
+
+async function nuevoPedido(pedido) {
+  // Validar los parámetros de entrada
+  if (!pedido || !pedido.Mesa || !pedido.Mesero || !pedido.Total || !pedido.Productos || !Array.isArray(pedido.Productos)) {
+    throw new Error("Parámetros de entrada incorrectos");
+  }
+
   const fechaActual = new Date(Date.now());
   const sqlCrearPedido = `
   INSERT INTO pedido (idMesa, Usuario, idCliente, idSede, Fecha, Total, Estado)
@@ -31,21 +67,24 @@ function nuevoPedido(pedido) {
     pedido.Total,
     "Pendiente",
   ];
-  /// Consulta
-  return new Promise((resolve, reject) => {
-    connection.query(
+
+  // Usar una función asíncrona
+  return new Promise( (resolve, reject) => {
+     connection.query(
       sqlCrearPedido,
       values,
-      function (err, resultados, campos) {
+      async (err, resultados, campos) => {
         if (err) reject(err);
         else {
-          crearProductosPedido(pedido.Productos, resultados.insertId);
+          await agregarProductosAlPedido( resultados.insertId,pedido.Productos);
           resolve(resultados.affectedRows);
         }
       }
     );
   });
 }
+
+
 function traerPedidos(filtro) {
   const sqlPedidos =
     "SELECT * FROM `pedido` " + filtro + " ORDER BY `pedido`.`Fecha` DESC";
@@ -158,6 +197,7 @@ function getProductosPedido(idPedido) {
   });
 }
 function crearProductosPedido(productos, id) {
+
   productos.forEach((producto) => {
     const sqlProductos = `
       INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario, Total, Estado)
@@ -180,7 +220,46 @@ function crearProductosPedido(productos, id) {
       }
     });
   });
+
+
 }
+
+async function agregarProductosAlPedido(id, productos) {
+  // Validar los parámetros de entrada
+  if (!id || !productos || !Array.isArray(productos)) {
+    throw new Error("Parámetros de entrada incorrectos");
+  }
+
+  productos.forEach(async producto => {
+    // Usar una expresión de plantilla para mejorar la legibilidad del código
+    const sqlProductos = `
+      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario, Total, Estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const values = [
+      id,
+      producto.id,
+      producto.cantidad,
+      producto.precio,
+      producto.comentario,
+      producto.precio,
+      "Pendiente",
+    ];
+
+    // Usar una función asíncrona 
+     connection.query(sqlProductos, values, (err, resultados, campos) => {
+      if (err) {
+        console.log("hubo un error: ", err);
+      } else {
+        console.log(`producto: ${producto.id} ID del pedido: ${id}`);
+      }
+    });
+  });
+}
+
+
+
+
+
 function udtProductoPedido(estado, idPedido, codProducto) {
   const sqlActualizar = `UPDATE pedido_productos SET Estado = '${estado}' WHERE pedido_productos.idPedido = ${idPedido} AND pedido_productos.codProducto = '${codProducto}'`;
 
