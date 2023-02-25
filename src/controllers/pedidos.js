@@ -2,14 +2,17 @@ const con = require("../mysql.js");
 const  io  = require("../routes/socketio");
 
 async function traerPedidos(req, res) {
-  const idPedido = req.query.id;
+  
+  const idPedido = parseInt(req.query.id);
+  
   const estado = req.query.estado || false;
   let filtro = idPedido
-    ? "WHERE idPedido =" + idPedido
+    ? "WHERE idPedido = ?"
     : estado
-    ? `WHERE Estado = '${estado}'`
-    : " ";
-  const pedidos = await con.traerPedidos(filtro);
+    ? "WHERE Estado = ?"
+    : "";
+  const values = idPedido ? [idPedido] : estado ? [estado] : [];
+  const pedidos = await con.traerPedidos(filtro, values);
 
   const pedidosConProductos = await Promise.all(
     pedidos.map(async (pedido) => {
@@ -21,21 +24,38 @@ async function traerPedidos(req, res) {
   res.json(pedidosConProductos);
 }
 
+async function verificarEstadoMesa(idMesa) {
+  const [Mesa] = await con.traerMesas(idMesa);
+  return Mesa.Estado === 'Ocupado'
+}
+
 async function nuevoPedido(req, res) {
   const idMesa = req.body.Mesa;
   const pedido = req.body;
-  const [Mesa] = await con.traerMesas(idMesa);
+  try {
+    if (!idMesa) res.status(500).send("No se seleccionó mesa");
+    
+    const estadoMesa = await verificarEstadoMesa(idMesa);
+    if (estadoMesa) res.status(500).send("La Mesa está ocupada");
+    else {
+     
+      await con.nuevoPedido(pedido);
+      io.actualizarPedidos()
+      await con.actualizarEstadoMesa(idMesa, "Ocupado");
+      io.actualizarMesas()
+      res.json("Pedido Enviado");
+    }
+  } catch (error) {
 
-  if (Mesa.Estado == "Ocupado") res.status(500).send("La Mesa está ocupada");
-  else {
-   
-    await con.nuevoPedido(pedido);
-    io.actualizarPedidos()
-    await con.actualizarEstadoMesa(idMesa, "Ocupado");
-    io.actualizarMesas()
-    res.json("Pedido Enviado");
   }
 }
+
+async function actualizarPedido(req, res) {
+  const pedido = req.body;
+  //const response = await con.actualizarPedido(pedido);
+  res.json(actualizar);
+}
+
 
 async function productoListo(req, res) {
   const { idPedido, codProducto } = req.body;

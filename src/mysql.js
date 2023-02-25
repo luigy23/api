@@ -5,7 +5,7 @@ const connection = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
   password: "Luigy23.",
-  database: "restaurante",
+  database: "restaurante2",
 });
 
 connection.connect();
@@ -84,13 +84,12 @@ async function nuevoPedido(pedido) {
   });
 }
 
-
-function traerPedidos(filtro) {
+function traerPedidos(filtro, values) {
   const sqlPedidos =
     "SELECT * FROM `pedido` " + filtro + " ORDER BY `pedido`.`Fecha` DESC";
 
   return new Promise((resolve, reject) => {
-    connection.query(sqlPedidos, function (err, resultados, campos) {
+    connection.query(sqlPedidos, values, function (err, resultados, campos) {
       if (err) reject(err);
       else {
         resolve(resultados);
@@ -141,10 +140,11 @@ function getProductos() {
 }
 
 function udtProducto(producto) {
- const {nombre, descripcion, precio, estado, imagen, codigo} = producto
+ const {nombre, descripcion, categoria , precio, estado, imagen, codigo} = producto
   const sqludtProducto = `UPDATE productos SET 
   Nombre = '${nombre}', 
   Descripcion = '${descripcion}',
+  idCategoria = ${categoria},
   Precio = ${precio},
   Estado = '${estado}',
   Imagen = '${imagen}'
@@ -162,12 +162,12 @@ function udtProducto(producto) {
 }
 
 function crearProducto(producto) {
-  const {nombre, descripcion, precio, estado, imagen, codigo} = producto
+  const {nombre, descripcion, precio, estado, imagen, codigo, categoria} = producto
    const sqludtProducto = `INSERT INTO productos 
    (codProducto, Nombre, Descripcion, idCategoria, Precio, Imagen, Estado) 
    VALUES (?, ?, ?, ?, ?, ?, ?)`;
    const values = [
-    codigo, nombre, descripcion, "1", precio, imagen,
+    codigo, nombre, descripcion, categoria , precio, imagen,
     estado
    ]
  
@@ -181,14 +181,13 @@ function crearProducto(producto) {
      });
    });
  }
- 
 
-function getProductosPedido(idPedido) {
-  const sqlTraerProductos = `SELECT pro.Nombre, det.Cantidad, det.Comentario,det.codProducto, det.Estado FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
-  WHERE ped.idPedido= ${idPedido} ORDER BY Estado DESC`;
+ function delProducto(idProducto) {
+  const sqldelProducto = `DELETE FROM productos WHERE codProducto = '${idProducto}'`;
+
 
   return new Promise((resolve, reject) => {
-    connection.query(sqlTraerProductos, function (err, resultados, campos) {
+    connection.query(sqldelProducto, function (err, resultados) {
       if (err) reject(err);
       else {
         resolve(resultados);
@@ -196,32 +195,22 @@ function getProductosPedido(idPedido) {
     });
   });
 }
-function crearProductosPedido(productos, id) {
 
-  productos.forEach((producto) => {
-    const sqlProductos = `
-      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario, Total, Estado)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [
-      id,
-      producto.id,
-      producto.cantidad,
-      producto.precio,
-      producto.comentario,
-      producto.precio,
-      "Pendiente",
-    ];
 
-    connection.query(sqlProductos, values, (err, resultados, campos) => {
-      if (err) {
-        console.log("hubo un error: ", err);
-      } else {
-        console.log(`producto: ${producto.id} ID del pedido: ${id}`);
+
+
+function getProductosPedido(idPedido) {
+  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
+  WHERE ped.idPedido= ? ORDER BY Estado DESC`;
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlTraerProductos,[idPedido], function (err, resultados, campos) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
       }
     });
   });
-
-
 }
 
 async function agregarProductosAlPedido(id, productos) {
@@ -256,8 +245,51 @@ async function agregarProductosAlPedido(id, productos) {
   });
 }
 
-
-
+//Metodos Categoria
+function traerCategoria() {
+  const sqlTraerCategoria = `SELECT * FROM categoria`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlTraerCategoria, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function cambiarCategoria(idCategoria, nombre) {
+  const sqlcambiarCategoria = `UPDATE categoria SET Nombre = '${nombre}' WHERE categoria.idCategoria = ${idCategoria}`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlcambiarCategoria, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function crearCategoria(nombre,descripcion) {
+  const sqlcrearCategoria = `INSERT INTO categoria (Nombre,Descripcion) VALUES ('${nombre}','${descripcion}')`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlcrearCategoria, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function delCategoria(idCategoria) {
+  const sqldelCategoria = `DELETE FROM categoria WHERE idCategoria = ${idCategoria}`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqldelCategoria, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
 
 
 function udtProductoPedido(estado, idPedido, codProducto) {
@@ -274,6 +306,17 @@ function udtProductoPedido(estado, idPedido, codProducto) {
 }
 
 //METODOS MESA
+function crearMesa(descripcion, idMesa) {
+  const sqlCrearMesa = `INSERT INTO mesa (Descripcion, idMesa) VALUES ('${descripcion}', ${idMesa})`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlCrearMesa, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
 
 function obtenerElPedidoDeUnaMesa(idMesa) {
   const sqlObtenerId = `SELECT idPedido FROM pedido WHERE idMesa= ${idMesa} ORDER BY Fecha DESC LIMIT 1`;
@@ -367,13 +410,21 @@ module.exports = {
   udtProductoPedido,
   getEstadoPed_Productos,
   actualizarEstadoPedido,
+  crearMesa,
   obtenerElPedidoDeUnaMesa,
   actualizarEstadoMesa,
   traerMesas,
   getMesaDePedido,
+
   getProductos,
   udtProducto,
   crearProducto,
+
   test,
   restablecer,
+  delProducto,
+  crearCategoria,
+  traerCategoria,
+  cambiarCategoria,
+  delCategoria,
 };

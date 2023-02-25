@@ -3,7 +3,7 @@ require('express')
 const app = require('./app')
 const morgan = require('morgan')
 const cors = require('cors')
-
+const errores = require('./manejadorErrores')
 
 const {server} =  require("./routes/socketio")
 const path = require('path')
@@ -12,14 +12,15 @@ const path = require('path')
 app.set('port', process.env.PORT || 4000)
 app.set('json spaces', 2)
 // middlewares
-//app.use(express.static('uploads'));
+
+
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(cors())
 app.use(express.urlencoded({ extended: false }))
 // routes
-app.use(require('./routes/index.js'))
-
+app.use(require('./routes/index'))
+app.use(errores)
 app.get('/productos/imagenes/:id', (req, res) => {
 
   const id = req.params.id

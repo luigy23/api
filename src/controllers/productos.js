@@ -51,10 +51,20 @@ async function crearProducto (req, res) {
     io.actualizarProductos()
   }
 
+async function delProducto (req, res) {
+  const {id} = req.params
+
+  const responseDel = await con.delProducto(id)
+  console.log("producto eliminado", responseDel)
+  res.json(responseDel)
+  io.actualizarProductos()
+}
 
 
 module.exports = {
     getProductos,
     udtProducto,
-    crearProducto
+    crearProducto,
+    delProducto,
+    
 }
