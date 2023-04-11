@@ -50,16 +50,28 @@ async function nuevoPedido(req, res) {
   }
 }
 
-async function actualizarPedido(req, res) {
-  const pedido = req.body;
-  //const response = await con.actualizarPedido(pedido);
-  res.json(actualizar);
+
+async function añadirProductoPedido(req, res) {
+  const { idMesa, productos } = req.body;
+  const idPedido = await con.obtenerElPedidoDeUnaMesa(idMesa);
+  let cambio = await con.getCambiosPedido(idPedido);
+  cambio = cambio[0].Cambios+1;
+  console.log("Cambio:", cambio);
+
+   try {
+   await con.agregarProductosAlPedido(idPedido,productos,cambio)
+    io.actualizarPedidos()
+    con.udtCambiosPedido(idPedido,cambio)
+  } catch (error) {
+    res.status(500).send("Error en el cambio");  }
+
+  return res.json(cambio)
 }
 
-
 async function productoListo(req, res) {
-  const { idPedido, codProducto } = req.body;
-  const response = await con.udtProductoPedido("Listo", idPedido, codProducto);
+  const { idPedido, codProducto,idRegistro } = req.body;
+  console.log("IDREGISTRO:",idRegistro, "IDPEDIDO:",idPedido, "CODPRODUCTO:",codProducto)
+  const response = await con.udtProductoPedido("Listo", idPedido, codProducto, idRegistro);
   console.log("Producto listo:", response);
   await actualizarEstadoPedido(idPedido);
   io.actualizarPedidos()
@@ -67,20 +79,13 @@ async function productoListo(req, res) {
 }
 
 async function productoCancelado(req, res) {
-  try {
-    const { idPedido, codProducto } = req.body;
-    const response = await con.udtProductoPedido(
-      "Cancelado",
-      idPedido,
-      codProducto
-    );
-    console.log("Producto Cancelado:", response);
-    await actualizarEstadoPedido(idPedido);
-    io.actualizarPedidos()
-    res.json("Producto Cancelado:" + response);
-  } catch (error) {
-    res.json("Hubo un error:" + response);
-  }
+  const { idPedido, codProducto,idRegistro } = req.body;
+  console.log("IDREGISTRO:",idRegistro, "IDPEDIDO:",idPedido, "CODPRODUCTO:",codProducto)
+  const response = await con.udtProductoPedido("Cancelado", idPedido, codProducto, idRegistro);
+  console.log("Producto cancelado:", response);
+  await actualizarEstadoPedido(idPedido);
+  io.actualizarPedidos()
+  res.json(response);
 }
 
 async function actualizarEstadoPedido(idPedido) {
@@ -115,4 +120,5 @@ module.exports = {
   productoCancelado,
   actualizarEstadoPedido,
   nuevoPedido,
+  añadirProductoPedido,
 };

@@ -6,6 +6,8 @@ const pedidos = require('../controllers/pedidos.js')
 const mesas = require("../controllers/mesas")
 const productos = require('../controllers/productos')
 const categorias = require('../controllers/categorias')
+const facturas = require('../controllers/facturas')
+const caja = require('../controllers/caja')
 
 const multer  = require('multer')
 const upload = multer({ dest: 'public/imagenes' })
@@ -40,15 +42,14 @@ router.put('/categorias/:id', categorias.cambiarCategoria)
 router.delete('/categorias/:id', categorias.delCategoria)
 
 //pedidos
-router.post('/nuevo/pedido', pedidos.nuevoPedido)
+router.post('/pedidos', pedidos.nuevoPedido)
 router.get('/pedidos', pedidos.traerPedidos)
-// router.get('/pedidos/:id', pedidos.traerPedidos)
-// router.put('/pedidos', pedidos.actualizarPedido)
-//router.delete('/pedidos/:id', pedidos.delPedido)
+router.put('/pedidos', pedidos.añadirProductoPedido)
+
 
 //productos
-router.put('/ProductoListo', pedidos.productoListo)
-router.put('/ProductoCancelado', pedidos.productoCancelado)
+router.put('/productos/listo', pedidos.productoListo)
+router.put('/productos/cancelado', pedidos.productoCancelado)
 router.put('/Estado/Pedido', pedidos.actualizarEstadoPedido)
 
 //mesas
@@ -56,6 +57,11 @@ router.get('/mesas', mesas.obtenerMesa)
 router.post('/mesas', mesas.crearMesa)
 router.get('/mesas/pedido/:idMesa', mesas.pedidoMesa)
 
+//Facturas
+router.post('/facturas/', facturas.crearFactura)
+
+//caja
+router.post('/caja', caja.iniciarCaja)
 
 //otros
 router.get('/reset', async (req, res) => {

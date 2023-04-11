@@ -30,10 +30,14 @@ async function crearMesa(req, res) {
 
 async function pedidoMesa(req, res) {
   const idMesa = req.params.idMesa;
+  const Mesa = await con.traerMesas(idMesa);
+  if (Mesa && Mesa[0] && Mesa[0].Estado != "Disponible") {
   const pedidoMesa = await con.obtenerElPedidoDeUnaMesa(idMesa);
   const productos = await con.getProductosPedido(pedidoMesa);
-  res.json(productos);
+  res.json(productos);}
+  else res.json([]);
 }
+
 
 
 

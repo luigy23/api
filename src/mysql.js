@@ -4,7 +4,7 @@ const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "Luigy23.",
+  password: "",
   database: "restaurante2",
 });
 
@@ -124,6 +124,33 @@ async function getEstadoPed_Productos(idPedido, estado) {
     });
   });
 }
+async function getCambiosPedido(idPedido){
+
+  const sqlCambios = 'SELECT Cambios FROM `pedido` WHERE idPedido=?';
+  const values = [idPedido];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlCambios, values, function (err, resultados, campos) {
+      if (err) {
+        throw console.error(err);
+      } else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+async function udtCambiosPedido(idPedido, cambio){
+  const sqlCambios = 'UPDATE pedido SET Cambios = ? WHERE idPedido=?';
+  const values = [cambio, idPedido];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlCambios, values, function (err, resultados, campos) {
+      if (err) {
+        throw console.error(err);
+      } else {
+        resolve(resultados);
+      }
+    });
+  });
+}
 
 //METODOS PRODUCTOS
 
@@ -196,11 +223,8 @@ function crearProducto(producto) {
   });
 }
 
-
-
-
 function getProductosPedido(idPedido) {
-  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
+  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado, det.idRegistro FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
   WHERE ped.idPedido= ? ORDER BY Estado DESC`;
 
   return new Promise((resolve, reject) => {
@@ -213,7 +237,7 @@ function getProductosPedido(idPedido) {
   });
 }
 
-async function agregarProductosAlPedido(id, productos) {
+async function agregarProductosAlPedido(id, productos, idRegistro=0) {
   // Validar los parámetros de entrada
   if (!id || !productos || !Array.isArray(productos)) {
     throw new Error("Parámetros de entrada incorrectos");
@@ -222,16 +246,16 @@ async function agregarProductosAlPedido(id, productos) {
   productos.forEach(async producto => {
     // Usar una expresión de plantilla para mejorar la legibilidad del código
     const sqlProductos = `
-      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario,  Estado)
-      VALUES (?, ?, ?, ?, ?, ?)`;
+      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario,  Estado, idRegistro)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const values = [
       id,
       producto.id,
       producto.cantidad,
       producto.precio,
       producto.comentario,
-      
       "Pendiente",
+      idRegistro
     ];
 
     // Usar una función asíncrona 
@@ -244,6 +268,49 @@ async function agregarProductosAlPedido(id, productos) {
     });
   });
 }
+
+//METODOS FACTURAS
+function insertarFactura(factura) {
+  const { numFactura, idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado } = factura;
+  
+  const sqlInsertarFactura = `INSERT INTO factura
+    (NumFactura, idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  
+  const values = [
+    numFactura, idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado
+  ];
+  
+  return new Promise((resolve, reject) => {
+    connection.query(sqlInsertarFactura, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
+//METODOS CAJA
+function inicializarCaja(estado, saldoInicial) {
+  const fecha = new Date();
+  
+  const sqlInsertarCaja = `INSERT INTO caja (Estado, SaldoInicial, Saldo, Fecha) VALUES (?, ?, ?, ?)`;
+  
+  const values = [
+    estado,
+    saldoInicial,
+    saldoInicial,
+    fecha
+  ];
+  
+  return new Promise((resolve, reject) => {
+    connection.query(sqlInsertarCaja, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
+
 
 //Metodos Categoria
 function traerCategoria() {
@@ -292,15 +359,19 @@ function delCategoria(idCategoria) {
 }
 
 
-function udtProductoPedido(estado, idPedido, codProducto) {
-  const sqlActualizar = `UPDATE pedido_productos SET Estado = '${estado}' WHERE pedido_productos.idPedido = ${idPedido} AND pedido_productos.codProducto = '${codProducto}'`;
+function udtProductoPedido(estado, idPedido, codProducto,idRegistro) {
+  const sqlActualizar = "UPDATE `pedido_productos` SET `Estado` = ? WHERE `pedido_productos`.`idPedido` = ? AND `pedido_productos`.`codProducto` = ? AND `pedido_productos`.`idRegistro` = ?";
+  const values = [estado, idPedido, codProducto,idRegistro];
 
   return new Promise((resolve, reject) => {
-    connection.query(sqlActualizar, function (err, resultados, campos) {
-      if (err) throw console.error(err);
+    connection.query(sqlActualizar, values, function (err, resultados) {
+      if (err) reject(err);
       else {
+        
         resolve(resultados.affectedRows);
       }
+      //mostramos la consulta sql:
+      console.log(this.sql);
     });
   });
 }
@@ -319,13 +390,17 @@ function crearMesa(descripcion, idMesa) {
 }
 
 function obtenerElPedidoDeUnaMesa(idMesa) {
-  const sqlObtenerId = `SELECT idPedido FROM pedido WHERE idMesa= ${idMesa} ORDER BY Fecha DESC LIMIT 1`;
+  const sqlObtenerId = "SELECT idPedido FROM pedido WHERE idMesa = ? ORDER BY Fecha DESC LIMIT 1";
   return new Promise((resolve, reject) => {
-    connection.query(sqlObtenerId, function (err, resultados, campos) {
+    connection.query(sqlObtenerId, [idMesa], function (err, resultados, campos) {
       if (err) {
-        throw console.error(err);
+        reject(err);
       } else {
-        resolve(resultados[0].idPedido);
+        if (resultados.length > 0) {
+          resolve(resultados[0].idPedido);
+        } else {
+          resolve(null);
+        }
       }
     });
   });
@@ -371,41 +446,35 @@ function test() {
   //sqlQuery("SELECT 1 + 1 AS solution").then((res)=>console.log("Respuesta de Test: ", res))
 }
 
-function restablecer() {
+async function restablecer() {
   const mesas = "UPDATE mesa SET Estado = 'Disponible';  ";
   const borrarPro = "DELETE from pedido_productos;";
   const borrarPed = " DELETE from pedido;";
   const contador = "ALTER TABLE pedido AUTO_INCREMENT = 1";
+  const borrarFacturas = "DELETE from factura;";
+  const borrarCaja = "DELETE from caja;";
 
-  return new Promise((resolve, reject) => { 
-
-    connection.query(mesas, function (err, resultados, campos) {
-      if (err) {
-        throw console.error(err);
-      } else {
-        connection.query(borrarPro, function (err, resultados, campos) {
-          if (err) throw console.error(err);
-          connection.query(borrarPed, function (err, resultados, campos) {
-            if (err) throw console.error(err);
-            connection.query(contador, function (err, resultados, campos) {
-              if (err) throw console.error(err);
-              resolve(resultados)
-            }
-             
-              )
-          });
-        });
-      }
-    });
-
-
-   })
-
+  try {
+    connection.beginTransaction();
+    connection.query(mesas);
+    connection.query(borrarPro);
+    connection.query(borrarPed);
+    connection.query(contador);
+    connection.query(borrarFacturas);
+    connection.query(borrarCaja);
+    connection.commit();
+    console.log("Se ha restablecido la base de datos");
+  } catch (error) {
+    console.log("Error al restablecer la base de datos");
+  }
 }
 
 module.exports = {
   nuevoPedido,
   traerPedidos,
+  getCambiosPedido,
+  udtCambiosPedido,
+
   getProductosPedido,
   udtProductoPedido,
   getEstadoPed_Productos,
@@ -419,6 +488,8 @@ module.exports = {
   getProductos,
   udtProducto,
   crearProducto,
+  agregarProductosAlPedido,
+  insertarFactura,
 
   test,
   restablecer,
@@ -427,4 +498,6 @@ module.exports = {
   traerCategoria,
   cambiarCategoria,
   delCategoria,
+
+  inicializarCaja
 };
