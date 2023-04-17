@@ -16,4 +16,20 @@ async function iniciarCaja(req, res) {
         })
     }
 }
-module.exports = { iniciarCaja };
+
+//taer caja
+async function traerCaja(req, res) {
+    try {
+        const caja = await con.obtenerCajaActiva()
+        res.status(200).json(caja)
+    } catch (error) {
+        res.status(500).json({
+            message: "Error al traer caja"
+        })
+    }
+}
+
+
+
+
+module.exports = { iniciarCaja, traerCaja };
