@@ -271,23 +271,54 @@ async function agregarProductosAlPedido(id, productos, idRegistro=0) {
 
 //METODOS FACTURAS
 function insertarFactura(factura) {
-  const { numFactura, idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado } = factura;
-  
+  const { idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado } = factura;
+
   const sqlInsertarFactura = `INSERT INTO factura
-    (NumFactura, idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  
+      (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
   const values = [
-    numFactura, idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado
+    idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado
   ];
-  
+
   return new Promise((resolve, reject) => {
-    connection.query(sqlInsertarFactura, values, function (error, resultado) {
-      if (error) reject(error);
-      else resolve(resultado);
+    connection.beginTransaction((error) => {
+      if (error) {
+        connection.rollback();
+        return reject(error);
+      }
+
+      connection.query(sqlInsertarFactura, values, function (error, resultado) {
+        if (error) {
+          connection.rollback();
+          return reject(error);
+        }
+
+        const numFactura = resultado.insertId;
+
+        const movimiento = {
+          numFactura: numFactura,
+          monto: total,
+          descripcion: idMetodoPago,
+          tipo: 'Ingreso',
+          idCaja: idCaja,
+          fechaHora: null
+        };
+
+        insertarMovimiento(movimiento)
+          .then(() => {
+            connection.commit();
+            resolve({ numFactura });
+          })
+          .catch((error) => {
+            connection.rollback();
+            reject(error);
+          });
+      });
     });
   });
 }
+
 
 //METODOS CAJA
 function inicializarCaja(estado, saldoInicial) {
@@ -309,6 +340,62 @@ function inicializarCaja(estado, saldoInicial) {
     });
   });
 }
+function obtenerCajaActiva() {
+  const sqlObtenerCaja = `select * from caja where Estado = 'Activa' order by idCaja desc limit 1;`;
+  
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerCaja, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+function sumarSaldoCaja(idCaja, saldo) {
+  const sqlSumarSaldo = 'UPDATE caja SET Saldo = Saldo + ? WHERE idCaja = ?';
+  const values = [saldo, idCaja];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlSumarSaldo,values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
+//METODOS MOVIMIENTOS
+function insertarMovimiento(datosMovimiento) {
+  const sqlInsertarMovimiento = 'INSERT INTO movimientos (NumFactura, Monto, Descripcion, Tipo, idCaja, FechaHora) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP())';  // aquí se utiliza CURRENT_TIMESTAMP() para la fecha y hora
+  const values = [
+    datosMovimiento.numFactura,
+    datosMovimiento.monto,
+    datosMovimiento.descripcion,
+    datosMovimiento.tipo,
+    datosMovimiento.idCaja
+  ];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlInsertarMovimiento, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado.insertId);
+    });
+  });
+}
+function getMovimientos(idCaja) {
+  const sqlObtenerMovimientos = `
+  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  FROM movimientos
+  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+  WHERE movimientos.idCaja = ?
+  ORDER BY FechaHora DESC;`;
+  const values = [idCaja];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerMovimientos, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
 
 
 
@@ -375,6 +462,59 @@ function udtProductoPedido(estado, idPedido, codProducto,idRegistro) {
     });
   });
 }
+
+
+// metodos de pago:
+function crearMetodoPago(nombre, descripcion, estado) {
+  const sql = 'INSERT INTO metodospago (Nombre, Descripcion, Estado) VALUES (?, ?, ?)';
+  const values = [nombre, descripcion, estado];
+  return new Promise((resolve, reject) => {
+    connection.query(sql, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado.insertId);
+    });
+  });
+}
+function obtenerMetodoPagoPorId(idMetodoPago) {
+  const sql = 'SELECT * FROM metodospago WHERE idMetodoPago = ?;';
+  const values = [idMetodoPago];
+  return new Promise((resolve, reject) => {
+    connection.query(sql, values, function (error, resultados) {
+      if (error) reject(error);
+      else resolve(resultados[0]);
+    });
+  });
+}
+function actualizarMetodoPago(idMetodoPago, nombre, descripcion, estado) {
+  const sql = 'UPDATE metodospago SET Nombre = ?, Descripcion = ?, Estado = ? WHERE idMetodoPago = ?;';
+  const values = [nombre, descripcion, estado, idMetodoPago];
+  return new Promise((resolve, reject) => {
+    connection.query(sql, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado.affectedRows > 0);
+    });
+  });
+}
+function eliminarMetodoPago(idMetodoPago) {
+  const sql = 'DELETE FROM metodospago WHERE idMetodoPago = ?;';
+  const values = [idMetodoPago];
+  return new Promise((resolve, reject) => {
+    connection.query(sql, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado.affectedRows > 0);
+    });
+  });
+}
+function obtenerMetodosPago() {
+  const sql = 'SELECT * FROM metodospago;';
+  return new Promise((resolve, reject) => {
+    connection.query(sql, function (error, resultados) {
+      if (error) reject(error);
+      else resolve(resultados);
+    });
+  });
+}
+
 
 //METODOS MESA
 function crearMesa(descripcion, idMesa) {
@@ -447,27 +587,34 @@ function test() {
 }
 
 async function restablecer() {
+  const borrarFacturas = "DELETE from factura;";
   const mesas = "UPDATE mesa SET Estado = 'Disponible';  ";
   const borrarPro = "DELETE from pedido_productos;";
   const borrarPed = " DELETE from pedido;";
   const contador = "ALTER TABLE pedido AUTO_INCREMENT = 1";
-  const borrarFacturas = "DELETE from factura;";
+  const contadorFactura = "ALTER TABLE factura AUTO_INCREMENT = 1";
+  const borrarMovimientos = "DELETE from movimientos;";
+
   const borrarCaja = "DELETE from caja;";
 
   try {
     connection.beginTransaction();
+    connection.query(borrarFacturas);
     connection.query(mesas);
     connection.query(borrarPro);
     connection.query(borrarPed);
     connection.query(contador);
-    connection.query(borrarFacturas);
+    connection.query(contadorFactura);
+
     connection.query(borrarCaja);
+    connection.query(borrarMovimientos);
     connection.commit();
     console.log("Se ha restablecido la base de datos");
   } catch (error) {
     console.log("Error al restablecer la base de datos");
   }
 }
+
 
 module.exports = {
   nuevoPedido,
@@ -499,5 +646,16 @@ module.exports = {
   cambiarCategoria,
   delCategoria,
 
-  inicializarCaja
+  inicializarCaja,
+  obtenerCajaActiva,
+  sumarSaldoCaja,
+
+  insertarMovimiento,
+  getMovimientos,
+
+  crearMetodoPago,
+  obtenerMetodoPagoPorId,
+  actualizarMetodoPago,
+  eliminarMetodoPago,
+  obtenerMetodosPago,
 };

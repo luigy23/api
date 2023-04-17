@@ -8,6 +8,8 @@ const productos = require('../controllers/productos')
 const categorias = require('../controllers/categorias')
 const facturas = require('../controllers/facturas')
 const caja = require('../controllers/caja')
+const movimientos = require('../controllers/movimientos')
+const metodosPago = require('../controllers/metodosPago')
 
 const multer  = require('multer')
 const upload = multer({ dest: 'public/imagenes' })
@@ -62,6 +64,18 @@ router.post('/facturas/', facturas.crearFactura)
 
 //caja
 router.post('/caja', caja.iniciarCaja)
+router.get('/caja', caja.traerCaja)
+
+//movimientos
+router.get('/movimientos', movimientos.getMovimientos)
+
+// Métodos de pago
+router.post('/metodosPago', metodosPago.crearMetodoPago);
+router.get('/metodosPago', metodosPago.obtenerMetodosPago);
+router.get('/metodosPago/:id', metodosPago.obtenerMetodoPagoPorId);
+router.put('/metodosPago/:id', metodosPago.actualizarMetodoPago);
+router.delete('/metodosPago/:id', metodosPago.eliminarMetodoPago);
+
 
 //otros
 router.get('/reset', async (req, res) => {
