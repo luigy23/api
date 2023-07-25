@@ -1,9 +1,34 @@
 const con = require("../mysql.js")
-const  io  = require("../routes/socketio");
+
 
 //inicar caja
 async function iniciarCaja(req, res) {
+
+
+
+    //verificamos que hayan enviado informacion en el body
+    if (req.body == "") {
+        res.status(500).json({
+            message: "Ingrese saldo inicial"
+        })
+        return
+    }
+
     const {saldoInicial} = req.body;
+    //filtro de saldo, que sea un numero valido
+    if (saldoInicial == "" || isNaN(saldoInicial)) {
+        res.status(500).json({
+            message: "Ingrese saldo inicial valido"
+        })
+        return
+    }
+
+
+
+
+
+
+
     console.log(saldoInicial)
     try {
         con.inicializarCaja("Activa",saldoInicial)

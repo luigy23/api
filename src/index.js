@@ -13,10 +13,23 @@ app.set('port', process.env.PORT || 4000)
 app.set('json spaces', 2)
 // middlewares
 
+//cookies
+ const cookieParser = require('cookie-parser')
+app.use(cookieParser())
 
 app.use(morgan('dev'))
 app.use(express.json())
-app.use(cors())
+app.use(cors(
+  // Permitimos todos los origenes y las cookies de todos los origenes
+  {origin: true, credentials: true}
+
+))
+
+
+
+
+
+
 app.use(express.urlencoded({ extended: false }))
 // routes
 app.use(require('./routes/index'))

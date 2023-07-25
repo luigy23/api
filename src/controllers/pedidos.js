@@ -6,13 +6,14 @@ async function traerPedidos(req, res) {
   const idPedido = parseInt(req.query.id);
   
   const estado = req.query.estado || false;
+  const limit = req.query.limit || false;
   let filtro = idPedido
     ? "WHERE idPedido = ?"
     : estado
     ? "WHERE Estado = ?"
-    : "";
+    : ""
   const values = idPedido ? [idPedido] : estado ? [estado] : [];
-  const pedidos = await con.traerPedidos(filtro, values);
+  const pedidos = await con.traerPedidos(filtro, values, limit);
 
   const pedidosConProductos = await Promise.all(
     pedidos.map(async (pedido) => {
@@ -26,7 +27,7 @@ async function traerPedidos(req, res) {
 
 async function verificarEstadoMesa(idMesa) {
   const [Mesa] = await con.traerMesas(idMesa);
-  return Mesa.Estado === 'Ocupado'
+  return Mesa.Estado === 'Ocupado' || Mesa.Estado === 'Sin Pagar';
 }
 
 async function nuevoPedido(req, res) {
@@ -38,8 +39,9 @@ async function nuevoPedido(req, res) {
     const estadoMesa = await verificarEstadoMesa(idMesa);
     if (estadoMesa) res.status(500).send("La Mesa está ocupada");
     else {
-     
+      
       await con.nuevoPedido(pedido);
+
       io.actualizarPedidos()
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
       io.actualizarMesas()
@@ -62,6 +64,7 @@ async function añadirProductoPedido(req, res) {
    await con.agregarProductosAlPedido(idPedido,productos,cambio)
     io.actualizarPedidos()
     con.udtCambiosPedido(idPedido,cambio)
+    con.actualizarEstadoPedido("Pendiente",idPedido)
   } catch (error) {
     res.status(500).send("Error en el cambio");  }
 

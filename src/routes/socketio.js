@@ -30,8 +30,21 @@ function actualizarProductos(){
   io.in("meseros").emit("productos",true)
 }
 
+//actualizar caja:
+function actualizarCaja(){
+  io.in("meseros").emit("actualizarCaja",true)
+}
+
+//actulizar movimientos:
+function actualizarMovimientos(){
+  io.in("meseros").emit("actualizarMovimientos",true)
+}
 
 
 
 
-module.exports = { io, server, actualizarPedidos, actualizarMesas,actualizarProductos };
+
+module.exports = { io, server, actualizarPedidos, actualizarMesas,actualizarProductos, 
+  actualizarCaja,
+  actualizarMovimientos
+};

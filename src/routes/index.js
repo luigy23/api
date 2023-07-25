@@ -10,7 +10,8 @@ const facturas = require('../controllers/facturas')
 const caja = require('../controllers/caja')
 const movimientos = require('../controllers/movimientos')
 const metodosPago = require('../controllers/metodosPago')
-
+const login = require('../controllers/login')
+const verficarToken = require('../Middleware/verificarToken')
 const multer  = require('multer')
 const upload = multer({ dest: 'public/imagenes' })
 
@@ -37,6 +38,12 @@ router.get('/', (req, res) => {
 })})
 
 
+//login
+router.post('/login', login.login)
+router.post('/registrar', login.registrar)
+router.get('/login/verificar', login.verificarLogueo)
+
+
 //categorias
 router.get('/categorias', categorias.getCategorias)
 router.post('/categorias', categorias.crearCategoria)
@@ -60,14 +67,18 @@ router.post('/mesas', mesas.crearMesa)
 router.get('/mesas/pedido/:idMesa', mesas.pedidoMesa)
 
 //Facturas
-router.post('/facturas/', facturas.crearFactura)
+router.post('/facturas/',verficarToken, facturas.crearFactura)
+router.get('/facturas/', facturas.obtenerFacturas)
+router.get('/facturas/:id', facturas.obtenerFacturaPorId)
 
 //caja
-router.post('/caja', caja.iniciarCaja)
+router.post('/caja',verficarToken, caja.iniciarCaja)
 router.get('/caja', caja.traerCaja)
 
 //movimientos
 router.get('/movimientos', movimientos.getMovimientos)
+router.get('/movimientos/todos', movimientos.getTodosMovimientos)
+router.post('/movimientos/filtrados', movimientos.getMovimientosFiltrados)
 
 // Métodos de pago
 router.post('/metodosPago', metodosPago.crearMetodoPago);

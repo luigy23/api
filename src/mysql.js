@@ -15,6 +15,56 @@ connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
   console.log("Connected to DB!");
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+//Metodos Login
+function login(usuario) {
+  const sqlLogin = `SELECT * FROM usuarios WHERE Usuario = ?`;
+  const values = [usuario];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlLogin, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function registrar(usuario) {
+  //los campos son INSERT INTO `usuarios` (`Usuario`, `Nombres`, `Apellidos`, `FechaNacimiento`, `idCargo`, `Contraseña`, `Estado`) VALUES ('', '', '', NULL, '', '', '')
+  const sqlRegistrar = `INSERT INTO usuarios (Usuario, Nombres, Apellidos, FechaNacimiento, idCargo, Contraseña, Estado) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const values = [
+    usuario.Usuario,
+    usuario.Nombres,
+    usuario.Apellidos,
+    usuario.FechaNacimiento,
+    usuario.idCargo,
+    usuario.Contraseña,
+    usuario.Estado,
+  ];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlRegistrar, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+
+
+
 //METODOS PEDIDOS
 // function nuevoPedido(pedido) {
 //   const fechaActual = new Date(Date.now());
@@ -84,9 +134,16 @@ async function nuevoPedido(pedido) {
   });
 }
 
-function traerPedidos(filtro, values) {
+function traerPedidos(filtro, values, limit) {
   const sqlPedidos =
-    "SELECT * FROM `pedido` " + filtro + " ORDER BY `pedido`.`Fecha` DESC";
+    "SELECT * FROM `pedido` " + filtro + " ORDER BY `pedido`.`Fecha` DESC " + (limit ? "LIMIT ?" : "");
+
+  // Si "limit" es un número válido, lo agregamos al arreglo "values"
+  if (limit) {
+    //convetir a entero
+    limit = parseInt(limit);
+    values.push(limit);
+  }
 
   return new Promise((resolve, reject) => {
     connection.query(sqlPedidos, values, function (err, resultados, campos) {
@@ -224,7 +281,7 @@ function crearProducto(producto) {
 }
 
 function getProductosPedido(idPedido) {
-  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado, det.idRegistro FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario 
+  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado, det.idRegistro, ped.idPedido FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario  
   WHERE ped.idPedido= ? ORDER BY Estado DESC`;
 
   return new Promise((resolve, reject) => {
@@ -302,7 +359,9 @@ function insertarFactura(factura) {
           descripcion: idMetodoPago,
           tipo: 'Ingreso',
           idCaja: idCaja,
-          fechaHora: null
+          fechaHora: null,
+          idPedido: idPedido
+
         };
 
         insertarMovimiento(movimiento)
@@ -318,6 +377,55 @@ function insertarFactura(factura) {
     });
   });
 }
+function obtenerFacturas(fechas, limit) {
+  const sqlObtenerFacturas = `
+  SELECT factura.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  FROM factura
+  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido 
+  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+  WHERE factura.Fecha BETWEEN ? AND ?
+  ORDER BY factura.Fecha DESC
+  ${limit ? "LIMIT ?" : ""};`;
+
+  const values = [
+    fechas.fechaInicio,
+    fechas.fechaFin,
+  ];
+
+  if (limit) {
+    values.push(limit);
+  }
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerFacturas, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+function obtenerFacturaPorId(idFactura) {
+  const sqlObtenerFacturas = `
+  SELECT factura.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  FROM factura
+  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+  WHERE factura.NumFactura = ?;`;
+
+  const values = [
+    idFactura
+  ];
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerFacturas, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
+  
+
+
 
 
 //METODOS CAJA
@@ -363,13 +471,15 @@ function sumarSaldoCaja(idCaja, saldo) {
 
 //METODOS MOVIMIENTOS
 function insertarMovimiento(datosMovimiento) {
-  const sqlInsertarMovimiento = 'INSERT INTO movimientos (NumFactura, Monto, Descripcion, Tipo, idCaja, FechaHora) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP())';  // aquí se utiliza CURRENT_TIMESTAMP() para la fecha y hora
+  const sqlInsertarMovimiento = 'INSERT INTO movimientos (NumFactura, Monto, Descripcion, Tipo, idCaja, FechaHora, idPedido) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP(),?)';  // aquí se utiliza CURRENT_TIMESTAMP() para la fecha y hora
   const values = [
     datosMovimiento.numFactura,
     datosMovimiento.monto,
     datosMovimiento.descripcion,
     datosMovimiento.tipo,
-    datosMovimiento.idCaja
+    datosMovimiento.idCaja,
+    datosMovimiento.idPedido
+
   ];
   return new Promise((resolve, reject) => {
     connection.query(sqlInsertarMovimiento, values, function (error, resultado) {
@@ -395,6 +505,40 @@ function getMovimientos(idCaja) {
     });
   });
 }
+function getTodosMovimientos() {
+  const sqlObtenerMovimientos = `
+  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  FROM movimientos
+  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+  ORDER BY FechaHora DESC;`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerMovimientos, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
+  const sqlObtenerMovimientos = `
+  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  FROM movimientos
+  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+  WHERE movimientos.FechaHora BETWEEN ? AND ?
+  AND movimientos.Tipo = ?
+  ORDER BY FechaHora DESC;`;
+  const values = [fechaInicio, fechaFin, tipoMovimiento];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerMovimientos, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
 
 
 
@@ -617,6 +761,10 @@ async function restablecer() {
 
 
 module.exports = {
+
+  login,
+  registrar,
+
   nuevoPedido,
   traerPedidos,
   getCambiosPedido,
@@ -636,7 +784,11 @@ module.exports = {
   udtProducto,
   crearProducto,
   agregarProductosAlPedido,
+
+
   insertarFactura,
+  obtenerFacturas,
+  obtenerFacturaPorId,
 
   test,
   restablecer,
@@ -652,6 +804,8 @@ module.exports = {
 
   insertarMovimiento,
   getMovimientos,
+  getTodosMovimientos,
+  getMovimientosFiltrados,
 
   crearMetodoPago,
   obtenerMetodoPagoPorId,

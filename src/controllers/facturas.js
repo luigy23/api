@@ -55,19 +55,14 @@ async function crearFactura(req, res) {
           estado: "Pagado",
         };
 
-        //insertar movimiento de caja
-        // datosMovimiento.numFactura,
-        // datosMovimiento.monto,
-        // datosMovimiento.descripcion,
-        // datosMovimiento.tipo,
-        // datosMovimiento.idCaja
-        
-
-
+      
 
         const resultado = await con.insertarFactura(factura);
          //sumar el total de la factura a la caja si no hubo error
         await con.sumarSaldoCaja(idCaja, total);
+        //actualizar la caja si no hubo error
+        io.actualizarCaja();
+     
 
       
         // Actualizar el estado de la mesa y del pedido
@@ -99,4 +94,34 @@ async function crearFactura(req, res) {
     
   }
 
-module.exports = { crearFactura };
+//obtener Facturas
+async function obtenerFacturas(req, res) {
+    try {
+        const facturas = await con.obtenerFacturas({fechaInicio: "2021-05-01", fechaFin: "2023-04-25"}, 10)
+        res.status(200).json(facturas)
+    } catch (error) {
+        res.status(500).json({
+            message: "Error al traer facturas"
+        })
+    }
+
+  }
+
+//obyener factura por id
+async function obtenerFacturaPorId(req, res) {
+    try {
+        const { id } = req.params;
+        const factura = await con.obtenerFacturaPorId(id);
+        res.status(200).json(factura);
+    } catch (error) {
+        res.status(500).json({
+            message: "Error al traer factura"
+        })
+    }
+}
+
+
+
+
+
+module.exports = { crearFactura, obtenerFacturas, obtenerFacturaPorId };
