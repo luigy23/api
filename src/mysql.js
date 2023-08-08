@@ -1,11 +1,13 @@
 //const util = require('util')
-
+// variables de entorno
+const dotenv = require('dotenv');
+dotenv.config();
 const mysql = require("mysql2");
 const connection = mysql.createConnection({
-  host: "127.0.0.1",
-  user: "root",
-  password: "",
-  database: "restaurante2",
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "",
+  database: process.env.DB_NAME || "restaurante2",
 });
 
 connection.connect();

@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken")
 //middleware para verificar el token
 const verificarToken = (req, res, next) => {
     const token = req.cookies.token
-    console.log(req.cookies)
+    //console.log(req.cookies)
     if (!token) {
         res.status(500).json({
             message: "No hay token"
@@ -12,7 +12,7 @@ const verificarToken = (req, res, next) => {
     }
     try {
         const infoToken = jwt.verify(token, "hola")
-        console.log(infoToken)
+        //console.log(infoToken)
     } catch (error) {
         res.status(500).json({
             error: "Token invalido"

@@ -5,3 +5,4 @@
 .wwebjs_auth
 wwebjs_auth
 node_modules
+package-lock.json

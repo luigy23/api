@@ -46,46 +46,46 @@ router.get('/login/verificar', login.verificarLogueo)
 
 //categorias
 router.get('/categorias', categorias.getCategorias)
-router.post('/categorias', categorias.crearCategoria)
-router.put('/categorias/:id', categorias.cambiarCategoria)
-router.delete('/categorias/:id', categorias.delCategoria)
+router.post('/categorias',verficarToken, categorias.crearCategoria)
+router.put('/categorias/:id',verficarToken, categorias.cambiarCategoria)
+router.delete('/categorias/:id',verficarToken, categorias.delCategoria)
 
 //pedidos
-router.post('/pedidos', pedidos.nuevoPedido)
-router.get('/pedidos', pedidos.traerPedidos)
-router.put('/pedidos', pedidos.añadirProductoPedido)
+router.post('/pedidos',verficarToken, pedidos.nuevoPedido)
+router.get('/pedidos',verficarToken, pedidos.traerPedidos)
+router.put('/pedidos',verficarToken, pedidos.añadirProductoPedido)
 
 
 //productos
-router.put('/productos/listo', pedidos.productoListo)
-router.put('/productos/cancelado', pedidos.productoCancelado)
-router.put('/Estado/Pedido', pedidos.actualizarEstadoPedido)
+router.put('/productos/listo',verficarToken, pedidos.productoListo)
+router.put('/productos/cancelado',verficarToken, pedidos.productoCancelado)
+router.put('/Estado/Pedido',verficarToken, pedidos.actualizarEstadoPedido)
 
 //mesas
-router.get('/mesas', mesas.obtenerMesa)
-router.post('/mesas', mesas.crearMesa)
-router.get('/mesas/pedido/:idMesa', mesas.pedidoMesa)
+router.get('/mesas',verficarToken, mesas.obtenerMesa)
+router.post('/mesas',verficarToken, mesas.crearMesa)
+router.get('/mesas/pedido/:idMesa',verficarToken, mesas.pedidoMesa)
 
 //Facturas
 router.post('/facturas/',verficarToken, facturas.crearFactura)
-router.get('/facturas/', facturas.obtenerFacturas)
-router.get('/facturas/:id', facturas.obtenerFacturaPorId)
+router.get('/facturas/',verficarToken, facturas.obtenerFacturas)
+router.get('/facturas/:id',verficarToken, facturas.obtenerFacturaPorId)
 
 //caja
 router.post('/caja',verficarToken, caja.iniciarCaja)
-router.get('/caja', caja.traerCaja)
+router.get('/caja',verficarToken, caja.traerCaja)
 
 //movimientos
-router.get('/movimientos', movimientos.getMovimientos)
-router.get('/movimientos/todos', movimientos.getTodosMovimientos)
-router.post('/movimientos/filtrados', movimientos.getMovimientosFiltrados)
+router.get('/movimientos',verficarToken, movimientos.getMovimientos)
+router.get('/movimientos/todos',verficarToken, movimientos.getTodosMovimientos)
+router.post('/movimientos/filtrados',verficarToken, movimientos.getMovimientosFiltrados)
 
 // Métodos de pago
-router.post('/metodosPago', metodosPago.crearMetodoPago);
-router.get('/metodosPago', metodosPago.obtenerMetodosPago);
-router.get('/metodosPago/:id', metodosPago.obtenerMetodoPagoPorId);
-router.put('/metodosPago/:id', metodosPago.actualizarMetodoPago);
-router.delete('/metodosPago/:id', metodosPago.eliminarMetodoPago);
+router.post('/metodosPago',verficarToken, metodosPago.crearMetodoPago);
+router.get('/metodosPago',verficarToken, metodosPago.obtenerMetodosPago);
+router.get('/metodosPago/:id',verficarToken, metodosPago.obtenerMetodoPagoPorId);
+router.put('/metodosPago/:id',verficarToken, metodosPago.actualizarMetodoPago);
+router.delete('/metodosPago/:id',verficarToken, metodosPago.eliminarMetodoPago);
 
 
 //otros

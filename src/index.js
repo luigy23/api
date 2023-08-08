@@ -1,5 +1,7 @@
 const express =
 require('express')
+const dotenv = require('dotenv');
+dotenv.config();
 const app = require('./app')
 const morgan = require('morgan')
 const cors = require('cors')
@@ -53,6 +55,7 @@ app.use(function(err, req, res, next) {
 
 server.listen(process.env.PORT || 4000, () => {
   console.log('server port : ' + (process.env.PORT || 4000))
+  console.log('DB: ' + (process.env.DB_NAME || "restaurante2"))
 })
 
 
