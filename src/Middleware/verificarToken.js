@@ -2,8 +2,10 @@ const jwt = require("jsonwebtoken")
 
 //middleware para verificar el token
 const verificarToken = (req, res, next) => {
-    const token = req.cookies.token
-    //console.log(req.cookies)
+    
+    // sacamos el token de la cabecera Authorization (Bearer <token>)
+    const token = req.headers.authorization.split(" ")[1]
+
     if (!token) {
         res.status(500).json({
             message: "No hay token"
