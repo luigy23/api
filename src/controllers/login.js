@@ -110,10 +110,10 @@ async function registrar(req, res) {
 
 //verificar logueo
 async function verificarLogueo(req, res) {
-    const token = req.cookies.token
+    const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         res.status(500).json({
-            message: "No hay token"
+            message: "No hay token pana"
         })
         return
     }
