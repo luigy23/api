@@ -23,7 +23,7 @@ app.use(morgan('dev'))
 app.use(express.json())
 app.use(cors(
   // Permitimos todos los origenes y las cookies de todos los origenes
-  {origin: 'https://menur.netlify.app/', credentials: true}
+  {origin: '*', credentials: true}
     
 
 
