@@ -26,7 +26,7 @@ SET time_zone = "+00:00";
 --
 -- Estructura de tabla para la tabla `caja`
 --
-
+DROP TABLE IF EXISTS caja;
 CREATE TABLE `caja` (
   `idCaja` int(20) NOT NULL,
   `Estado` varchar(30) NOT NULL,
