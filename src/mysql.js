@@ -64,40 +64,131 @@ function registrar(usuario) {
   });
 }
 
+//Metodos Usuarios
+function obtenerUsuarios(estado=null) {
+
+
+  let sqlObtenerUsuarios = `SELECT Usuario, Nombres, Apellidos, FechaNacimiento, cargo.Nombre AS cargo, usuarios.Estado FROM usuarios LEFT JOIN cargo ON usuarios.idCargo = cargo.idCargo   `;
+  if (estado !== null) {
+    sqlObtenerUsuarios += ` WHERE usuarios.Estado = '${estado}'`;
+  }
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerUsuarios,function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function obtenerUsuario(usuario) {
+  const sqlObtenerUsuario = `SELECT * FROM usuarios WHERE Usuario = ?`;
+  const values = [usuario];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerUsuario, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function actualizarUsuario(usuario) {
+  let sqlActualizarUsuario = `UPDATE usuarios SET`;
+  const values = [];
+
+  if (usuario.Nombres) {
+    sqlActualizarUsuario += ` Nombres = ?,`;
+    values.push(usuario.Nombres);
+  }
+
+  if (usuario.Apellidos) {
+    sqlActualizarUsuario += ` Apellidos = ?,`;
+    values.push(usuario.Apellidos);
+  }
+
+  if (usuario.FechaNacimiento) {
+    sqlActualizarUsuario += ` FechaNacimiento = ?,`;
+    values.push(usuario.FechaNacimiento);
+  }
+
+  if (usuario.idCargo) {
+    sqlActualizarUsuario += ` idCargo = ?,`;
+    values.push(usuario.idCargo);
+  }
+
+  if (usuario.Contraseña) {
+    sqlActualizarUsuario += ` Contraseña = ?,`;
+    values.push(usuario.Contraseña);
+  }
+
+  if (usuario.Estado) {
+    sqlActualizarUsuario += ` Estado = ?,`;
+    values.push(usuario.Estado);
+  }
+
+  // Remove the trailing comma if any
+  sqlActualizarUsuario = sqlActualizarUsuario.replace(/,$/, '');
+
+  sqlActualizarUsuario += ` WHERE Usuario = ?`;
+  values.push(usuario.Usuario);
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlActualizarUsuario, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+function eliminarUsuario(usuario) {
+  const sqlEliminarUsuario = `DELETE FROM usuarios WHERE usuarios.Usuario = ?`;
+  const values = [usuario];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlEliminarUsuario, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+//verificar si el usuario tiene el Estado Activo
+function verificarEstadoUsuario(usuario) {
+  const sqlVerificarEstado = `SELECT Estado FROM usuarios WHERE Usuario = ?`;
+  const values = [usuario];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlVerificarEstado, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+function cambiarEstadoUsuario(usuario, estado) {
+  const sqlCambiarEstado = `UPDATE usuarios SET Estado = ? WHERE Usuario = ?`;
+  const values = [estado, usuario];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlCambiarEstado, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
 
 
 
-//METODOS PEDIDOS
-// function nuevoPedido(pedido) {
-//   const fechaActual = new Date(Date.now());
-//   const sqlCrearPedido = `
-//   INSERT INTO pedido (idMesa, Usuario, idCliente, idSede, Fecha, Total, Estado)
-//   VALUES ( ?,?,?,?,?,?,?);
-// `;
-//   const values = [
-//     pedido.Mesa,
-//     pedido.Mesero,
-//     null,
-//     "123",
-//     fechaActual,
-//     pedido.Total,
-//     "Pendiente",
-//   ];
-//   /// Consulta
-//   return new Promise((resolve, reject) => {
-//     connection.query(
-//       sqlCrearPedido,
-//       values,
-//       function (err, resultados, campos) {
-//         if (err) reject(err);
-//         else {
-//           agregarProductosAlPedido( resultados.insertId,pedido.Productos);
-//           resolve(resultados.affectedRows);
-//         }
-//       }
-//     );
-//   });
-//}
+
+
+
+
+
 
 async function nuevoPedido(pedido) {
   // Validar los parámetros de entrada
@@ -766,6 +857,13 @@ module.exports = {
 
   login,
   registrar,
+  obtenerUsuario,
+  obtenerUsuarios,
+  actualizarUsuario,
+  eliminarUsuario,
+  verificarEstadoUsuario,
+  cambiarEstadoUsuario,
+
 
   nuevoPedido,
   traerPedidos,

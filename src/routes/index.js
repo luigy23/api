@@ -42,6 +42,12 @@ router.get('/', (req, res) => {
 router.post('/login', login.login)
 router.post('/registrar', login.registrar)
 router.get('/login/verificar', login.verificarLogueo)
+//usuarios
+router.get('/usuarios/:estado', login.obtenerUsuarios)
+router.get('/usuarios', login.obtenerUsuarios)
+router.get('/usuarios/usuario/:usuario', login.obtenerUsuarios)
+router.put('/usuarios', login.actualizarUsuario)
+router.delete('/usuarios/:usuario', login.eliminarUsuario)
 
 
 //categorias

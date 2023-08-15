@@ -27,7 +27,8 @@
     "mysql2": "^2.3.3",
     "node-cron": "^3.0.2",
     "react-toastify": "^9.1.1",
-    "socket.io": "^4.5.4"
+    "socket.io": "^4.5.4",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "eslint": "^8.31.0",
