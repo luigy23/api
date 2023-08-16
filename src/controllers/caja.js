@@ -37,7 +37,8 @@ async function iniciarCaja(req, res) {
         })
     } catch (error) {
         res.status(500).json({
-            message: "Error al iniciar caja"
+            message: "Error al iniciar caja",
+            error: error
         })
     }
 }

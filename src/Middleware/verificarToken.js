@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken")
 con = require("../mysql.js")
 //middleware para verificar el token
-const verificarToken = (req, res, next) => {
+const verificarToken = async (req, res, next) => {
     // permitimos cors
     res.header("Access-Control-Allow-Origin", "*")
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
@@ -22,10 +22,12 @@ const verificarToken = (req, res, next) => {
         const infoToken = jwt.verify(token, "hola") 
         //verificamos que el usuario este activo
         const usuario = infoToken.usuario
-        const result = con.verificarEstadoUsuario(usuario)
-        if (result[0]!= "Activo") {
+        const result = await con.verificarEstadoUsuario(usuario)
+
+        if (result[0].Estado != "Activo") {
             res.status(500).json({
                 message: "Usuario no activo"
+                
             })
             return
         }
