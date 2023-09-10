@@ -18,6 +18,7 @@ io.on("connection", (socket) => {
 socket.on('disconnect', () => {
   console.log('user disconnected');})
   // socket.on('traerPedidos',())
+
 });
 
 function actualizarPedidos(){
@@ -40,11 +41,17 @@ function actualizarMovimientos(){
   io.in("meseros").emit("actualizarMovimientos",true)
 }
 
+//notificacion:
+function enviarNotificacion(mensaje, usuario){
+  console.log(`Usuario: ${usuario} Mensaje: ${mensaje}`)
+  io.in("meseros").emit(usuario,mensaje)
+}
 
 
 
 
 module.exports = { io, server, actualizarPedidos, actualizarMesas,actualizarProductos, 
   actualizarCaja,
-  actualizarMovimientos
+  actualizarMovimientos,
+  enviarNotificacion
 };

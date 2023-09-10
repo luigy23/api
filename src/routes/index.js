@@ -1,4 +1,8 @@
 const {Router} = require('express')
+//importamos execFile para ejecutar comandos en la consola
+const {execFile} = require('child_process')
+const os = require('os');
+
 
 const router = Router()
 const con = require('../mysql.js')
@@ -112,6 +116,26 @@ router.get('/sockets', async (req, res) =>{
 })
 router.get('/test', async (req, res) => {
   res.json("test")
+  
+  })
+
+ router.get('/imprimir', async (req, res) => {
+  //el archivo está la raiz del proyecto
+  const archivo = path.join(__dirname, '../../','imprimir.ps1')
+  //ejecutamos el archivo
+  execFile('powershell.exe', [archivo], (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error ejecutando PS script: ${error}`);
+      return;
+    }
+    
+    console.log(`Salida script PS: ${stdout}`);
+  });
+
+
+
+ 
+res.json(archivo)
   
   })
 
