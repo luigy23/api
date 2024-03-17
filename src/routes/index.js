@@ -75,6 +75,8 @@ router.put('/Estado/Pedido',verficarToken, pedidos.actualizarEstadoPedido)
 router.get('/mesas',verficarToken, mesas.obtenerMesa)
 router.post('/mesas',verficarToken, mesas.crearMesa)
 router.get('/mesas/pedido/:idMesa',verficarToken, mesas.pedidoMesa)
+router.put('/mesas/estado',verficarToken, mesas.actualizarEstadoMesa)
+router.put('/mesas',verficarToken, mesas.actualizarMesa)
 
 //Facturas
 router.post('/facturas/',verficarToken, facturas.crearFactura)

@@ -1,5 +1,5 @@
 const con = require("../mysql.js");
-const { io } = require("../routes/socketio");
+const  io  = require("../routes/socketio");
 const pedidos = require("./pedidos");
 
 async function obtenerMesa(req, res) {
@@ -23,8 +23,9 @@ async function obtenerMesa(req, res) {
 
 }
 async function crearMesa(req, res) {
-  const { descripcion, idMesa } = req.body;
-  const mesa = await con.crearMesa(descripcion, idMesa);
+  const { Descripcion } = req.body;
+  const mesa = await con.crearMesa(Descripcion);
+  io.actualizarMesas();
   res.json(mesa);
 }
 
@@ -38,7 +39,27 @@ async function pedidoMesa(req, res) {
   else res.json([]);
 }
 
+async function actualizarEstadoMesa(idMesa, estado) {
+  await con.actualizarEstadoMesa(idMesa, estado);
+  io.actualizarMesas();
+}
+
+async function actualizarMesa(req, res) {
+  const { idMesa, Estado, Descripcion } = req.body;
+
+  //validamos que no estén vacíos los campos
+  if (!idMesa || !Estado || !Descripcion) {
+    res.status(400).send("Faltan datos");
+    return;
+  }
+
+  await con.actualizarEstadoMesa(idMesa, Estado);
+  await con.cambiarDescripcionMesa(idMesa, Descripcion);
+
+  io.actualizarMesas();
+  res.json("Mesa actualizada");
+}
 
 
 
-module.exports = { obtenerMesa, crearMesa, pedidoMesa };
+module.exports = { obtenerMesa, crearMesa, pedidoMesa, actualizarEstadoMesa, actualizarMesa };

@@ -61,10 +61,14 @@ async function delProducto (req, res) {
 }
 
 
+
+
+
 module.exports = {
     getProductos,
     udtProducto,
     crearProducto,
     delProducto,
+    
     
 }

@@ -1,12 +1,12 @@
 //const util = require('util')
 // variables de entorno
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
 const mysql = require("mysql2");
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "123456",
+  password: process.env.DB_PASS || "", /// en el server es 123456 en local es vacio
   database: process.env.DB_NAME || "restaurante2",
 });
 
@@ -16,18 +16,6 @@ connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
   if (err) throw err;
   console.log("Connected to DB!");
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 //Metodos Login
 function login(usuario) {
@@ -65,16 +53,14 @@ function registrar(usuario) {
 }
 
 //Metodos Usuarios
-function obtenerUsuarios(estado=null) {
-
-
+function obtenerUsuarios(estado = null) {
   let sqlObtenerUsuarios = `SELECT Usuario, Nombres, Apellidos, FechaNacimiento, cargo.Nombre AS cargo, usuarios.Estado FROM usuarios LEFT JOIN cargo ON usuarios.idCargo = cargo.idCargo   `;
   if (estado !== null) {
     sqlObtenerUsuarios += ` WHERE usuarios.Estado = '${estado}'`;
   }
 
   return new Promise((resolve, reject) => {
-    connection.query(sqlObtenerUsuarios,function (err, resultados) {
+    connection.query(sqlObtenerUsuarios, function (err, resultados) {
       if (err) reject(err);
       else {
         resolve(resultados);
@@ -129,7 +115,7 @@ function actualizarUsuario(usuario) {
   }
 
   // Remove the trailing comma if any
-  sqlActualizarUsuario = sqlActualizarUsuario.replace(/,$/, '');
+  sqlActualizarUsuario = sqlActualizarUsuario.replace(/,$/, "");
 
   sqlActualizarUsuario += ` WHERE Usuario = ?`;
   values.push(usuario.Usuario);
@@ -182,17 +168,16 @@ function cambiarEstadoUsuario(usuario, estado) {
   });
 }
 
-
-
-
-
-
-
-
-
 async function nuevoPedido(pedido) {
   // Validar los parámetros de entrada
-  if (!pedido || !pedido.Mesa || !pedido.Mesero || !pedido.Total || !pedido.Productos || !Array.isArray(pedido.Productos)) {
+  if (
+    !pedido ||
+    !pedido.Mesa ||
+    !pedido.Mesero ||
+    !pedido.Total ||
+    !pedido.Productos ||
+    !Array.isArray(pedido.Productos)
+  ) {
     throw new Error("Parámetros de entrada incorrectos");
   }
 
@@ -212,15 +197,19 @@ async function nuevoPedido(pedido) {
   ];
 
   // Usar una función asíncrona
-  return new Promise( (resolve, reject) => {
-     connection.query(
+  return new Promise((resolve, reject) => {
+    connection.query(
       sqlCrearPedido,
       values,
       async (err, resultados, campos) => {
         if (err) reject(err);
         else {
-          await agregarProductosAlPedido( resultados.insertId,pedido.Productos);
+
+          console.log("Pedido creado:", resultados.insertId);
+          await agregarProductosAlPedido(resultados.insertId, pedido.Productos);
           resolve(resultados.affectedRows);
+      
+
         }
       }
     );
@@ -229,7 +218,10 @@ async function nuevoPedido(pedido) {
 
 function traerPedidos(filtro, values, limit) {
   const sqlPedidos =
-    "SELECT * FROM `pedido` " + filtro + " ORDER BY `pedido`.`Fecha` DESC " + (limit ? "LIMIT ?" : "");
+    "SELECT * FROM `pedido` " +
+    filtro +
+    " ORDER BY `pedido`.`Fecha` DESC " +
+    (limit ? "LIMIT ?" : "");
 
   // Si "limit" es un número válido, lo agregamos al arreglo "values"
   if (limit) {
@@ -252,7 +244,7 @@ function actualizarEstadoPedido(estado, idPedido) {
   connection.query(sqlEstadoPedido, function (err, resultados, campos) {
     if (err) throw err;
     else {
-      console.log("resultado: columna afectadas:", resultados.affectedRows);
+      console.log("Estado de pedido actualizado:", resultados.affectedRows);
     }
   });
 }
@@ -274,9 +266,8 @@ async function getEstadoPed_Productos(idPedido, estado) {
     });
   });
 }
-async function getCambiosPedido(idPedido){
-
-  const sqlCambios = 'SELECT Cambios FROM `pedido` WHERE idPedido=?';
+async function getCambiosPedido(idPedido) {
+  const sqlCambios = "SELECT Cambios FROM `pedido` WHERE idPedido=?";
   const values = [idPedido];
   return new Promise((resolve, reject) => {
     connection.query(sqlCambios, values, function (err, resultados, campos) {
@@ -288,8 +279,8 @@ async function getCambiosPedido(idPedido){
     });
   });
 }
-async function udtCambiosPedido(idPedido, cambio){
-  const sqlCambios = 'UPDATE pedido SET Cambios = ? WHERE idPedido=?';
+async function udtCambiosPedido(idPedido, cambio) {
+  const sqlCambios = "UPDATE pedido SET Cambios = ? WHERE idPedido=?";
   const values = [cambio, idPedido];
   return new Promise((resolve, reject) => {
     connection.query(sqlCambios, values, function (err, resultados, campos) {
@@ -317,16 +308,25 @@ function getProductos() {
 }
 
 function udtProducto(producto) {
- const {nombre, descripcion, categoria , precio, estado, imagen, codigo} = producto
+  const {
+    nombre,
+    descripcion,
+    categoria,
+    precio,
+    estado,
+    imagen,
+    stock,
+    codigo,
+  } = producto;
   const sqludtProducto = `UPDATE productos SET 
   Nombre = '${nombre}', 
   Descripcion = '${descripcion}',
   idCategoria = ${categoria},
   Precio = ${precio},
   Estado = '${estado}',
-  Imagen = '${imagen}'
+  Imagen = '${imagen}',
+  Stock = ${stock}
   WHERE productos.codProducto = '${codigo}'`;
-
 
   return new Promise((resolve, reject) => {
     connection.query(sqludtProducto, function (err, resultados) {
@@ -338,30 +338,66 @@ function udtProducto(producto) {
   });
 }
 
+async function restarStockProducto(codigoProducto, cantidad) {
+  const stockActual = await obteneStockProducto(codigoProducto);
+  const nuevoStock = stockActual - cantidad;
+  if (nuevoStock < 0) return false;
+
+  const sqlRestarStock = `UPDATE productos SET Stock = ? WHERE codProducto = ?`;
+  const values = [nuevoStock, codigoProducto];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlRestarStock, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        console.log("Stock actualizado:" + codigoProducto + " ->", resultados.affectedRows);
+        resolve(true); // Asegurarse de resolver la promesa correctamente
+      }
+    });
+  });
+}
+
+
+function obteneStockProducto(codigoProducto) {
+  const sqlObtenerStock = `SELECT Stock FROM productos WHERE codProducto = ?`;
+  const values = [codigoProducto];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerStock, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados[0].Stock);
+      }
+    });
+  });
+}
+
 function crearProducto(producto) {
-  const {nombre, descripcion, precio, estado, imagen, codigo, categoria} = producto
-   const sqludtProducto = `INSERT INTO productos 
+  const { nombre, descripcion, precio, estado, imagen, codigo, categoria } =
+    producto;
+  const sqludtProducto = `INSERT INTO productos 
    (codProducto, Nombre, Descripcion, idCategoria, Precio, Imagen, Estado) 
    VALUES (?, ?, ?, ?, ?, ?, ?)`;
-   const values = [
-    codigo, nombre, descripcion, categoria , precio, imagen,
-    estado
-   ]
- 
- 
-   return new Promise((resolve, reject) => {
-     connection.query(sqludtProducto, values, function (err, resultados) {
-       if (err) reject(err);
-       else {
-         resolve(resultados);
-       }
-     });
-   });
- }
+  const values = [
+    codigo,
+    nombre,
+    descripcion,
+    categoria,
+    precio,
+    imagen,
+    estado,
+  ];
 
- function delProducto(idProducto) {
+  return new Promise((resolve, reject) => {
+    connection.query(sqludtProducto, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+function delProducto(idProducto) {
   const sqldelProducto = `DELETE FROM productos WHERE codProducto = '${idProducto}'`;
-
 
   return new Promise((resolve, reject) => {
     connection.query(sqldelProducto, function (err, resultados) {
@@ -378,57 +414,102 @@ function getProductosPedido(idPedido) {
   WHERE ped.idPedido= ? ORDER BY Estado DESC`;
 
   return new Promise((resolve, reject) => {
-    connection.query(sqlTraerProductos,[idPedido], function (err, resultados, campos) {
-      if (err) reject(err);
-      else {
-        resolve(resultados);
+    connection.query(
+      sqlTraerProductos,
+      [idPedido],
+      function (err, resultados, campos) {
+        if (err) reject(err);
+        else {
+          resolve(resultados);
+        }
       }
-    });
+    );
   });
 }
 
-async function agregarProductosAlPedido(id, productos, idRegistro=0) {
+async function agregarProductosAlPedido(id, productos, idRegistro = 0) {
   // Validar los parámetros de entrada
   if (!id || !productos || !Array.isArray(productos)) {
     throw new Error("Parámetros de entrada incorrectos");
   }
 
-  productos.forEach(async producto => {
-    // Usar una expresión de plantilla para mejorar la legibilidad del código
-    const sqlProductos = `
-      INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario,  Estado, idRegistro)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [
-      id,
-      producto.id,
-      producto.cantidad,
-      producto.precio,
-      producto.comentario,
-      "Pendiente",
-      idRegistro
-    ];
-
-    // Usar una función asíncrona 
-     connection.query(sqlProductos, values, (err, resultados, campos) => {
-      if (err) {
-        console.log("hubo un error: ", err);
-      } else {
-        console.log(`producto: ${producto.id} ID del pedido: ${id}`);
+  try {
+    // Verificar y restar el stock de todos los productos de forma concurrente
+    await Promise.all(productos.map(async producto => {
+      const restarStock = await restarStockProducto(producto.id, producto.cantidad);
+      if (!restarStock) {
+        throw new Error(`No hay suficiente stock para el producto ${producto.id}`);
       }
-    });
-  });
+    }));
+
+    // Si el stock es suficiente, proceder a agregar los productos al pedido
+    for (const producto of productos) {
+      const sqlProductos = `
+        INSERT INTO pedido_productos (idPedido, codProducto, Cantidad, Precio, Comentario, Estado, idRegistro)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      const values = [
+        id,
+        producto.id,
+        producto.cantidad,
+        producto.precio,
+        producto.comentario,
+        "Pendiente",
+        idRegistro,
+      ];
+
+      // Esperar a que la consulta se complete antes de continuar con el siguiente producto
+      await new Promise((resolve, reject) => {
+        connection.query(sqlProductos, values, (err, resultados) => {
+          if (err) reject(err);
+          else {
+            console.log("Producto agregado:" + producto.id + " ", resultados.affectedRows);
+            resolve(resultados);
+          }
+        });
+      });
+    }
+  } catch (error) {
+    console.error("Error al procesar los productos:", error);
+    // Manejar el error adecuadamente
+    // Dependiendo de tu caso de uso, podrías querer revertir las operaciones de stock si es necesario
+  }
 }
+
 
 //METODOS FACTURAS
 function insertarFactura(factura) {
-  const { idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado } = factura;
+  const {
+    idPedido,
+    idCaja,
+    subtotal,
+    descuento,
+    iva,
+    total,
+    idMetodoPago,
+    recibido,
+    cambio,
+    usuario,
+    fecha,
+    estado,
+  } = factura;
 
   const sqlInsertarFactura = `INSERT INTO factura
       (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const values = [
-    idPedido, idCaja, subtotal, descuento, iva, total, idMetodoPago, recibido, cambio, usuario, fecha, estado
+    idPedido,
+    idCaja,
+    subtotal,
+    descuento,
+    iva,
+    total,
+    idMetodoPago,
+    recibido,
+    cambio,
+    usuario,
+    fecha,
+    estado,
   ];
 
   return new Promise((resolve, reject) => {
@@ -450,11 +531,10 @@ function insertarFactura(factura) {
           numFactura: numFactura,
           monto: total,
           descripcion: idMetodoPago,
-          tipo: 'Ingreso',
+          tipo: "Ingreso",
           idCaja: idCaja,
           fechaHora: null,
-          idPedido: idPedido
-
+          idPedido: idPedido,
         };
 
         insertarMovimiento(movimiento)
@@ -480,10 +560,7 @@ function obtenerFacturas(fechas, limit) {
   ORDER BY factura.Fecha DESC
   ${limit ? "LIMIT ?" : ""};`;
 
-  const values = [
-    fechas.fechaInicio,
-    fechas.fechaFin,
-  ];
+  const values = [fechas.fechaInicio, fechas.fechaFin];
 
   if (limit) {
     values.push(limit);
@@ -504,9 +581,7 @@ function obtenerFacturaPorId(idFactura) {
   LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
   WHERE factura.NumFactura = ?;`;
 
-  const values = [
-    idFactura
-  ];
+  const values = [idFactura];
 
   return new Promise((resolve, reject) => {
     connection.query(sqlObtenerFacturas, values, function (error, resultado) {
@@ -516,24 +591,14 @@ function obtenerFacturaPorId(idFactura) {
   });
 }
 
-  
-
-
-
-
 //METODOS CAJA
 function inicializarCaja(estado, saldoInicial) {
   const fecha = new Date();
-  
+
   const sqlInsertarCaja = `INSERT INTO caja (Estado, SaldoInicial, Saldo, Fecha) VALUES (?, ?, ?, ?)`;
-  
-  const values = [
-    estado,
-    saldoInicial,
-    saldoInicial,
-    fecha
-  ];
-  
+
+  const values = [estado, saldoInicial, saldoInicial, fecha];
+
   return new Promise((resolve, reject) => {
     connection.query(sqlInsertarCaja, values, function (error, resultado) {
       if (error) reject(error);
@@ -543,7 +608,7 @@ function inicializarCaja(estado, saldoInicial) {
 }
 function obtenerCajaActiva() {
   const sqlObtenerCaja = `select * from caja where Estado = 'Activa' order by idCaja desc limit 1;`;
-  
+
   return new Promise((resolve, reject) => {
     connection.query(sqlObtenerCaja, function (error, resultado) {
       if (error) reject(error);
@@ -552,10 +617,10 @@ function obtenerCajaActiva() {
   });
 }
 function sumarSaldoCaja(idCaja, saldo) {
-  const sqlSumarSaldo = 'UPDATE caja SET Saldo = Saldo + ? WHERE idCaja = ?';
+  const sqlSumarSaldo = "UPDATE caja SET Saldo = Saldo + ? WHERE idCaja = ?";
   const values = [saldo, idCaja];
   return new Promise((resolve, reject) => {
-    connection.query(sqlSumarSaldo,values, function (error, resultado) {
+    connection.query(sqlSumarSaldo, values, function (error, resultado) {
       if (error) reject(error);
       else resolve(resultado);
     });
@@ -564,21 +629,25 @@ function sumarSaldoCaja(idCaja, saldo) {
 
 //METODOS MOVIMIENTOS
 function insertarMovimiento(datosMovimiento) {
-  const sqlInsertarMovimiento = 'INSERT INTO movimientos (NumFactura, Monto, Descripcion, Tipo, idCaja, FechaHora, idPedido) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP(),?)';  // aquí se utiliza CURRENT_TIMESTAMP() para la fecha y hora
+  const sqlInsertarMovimiento =
+    "INSERT INTO movimientos (NumFactura, Monto, Descripcion, Tipo, idCaja, FechaHora, idPedido) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP(),?)"; // aquí se utiliza CURRENT_TIMESTAMP() para la fecha y hora
   const values = [
     datosMovimiento.numFactura,
     datosMovimiento.monto,
     datosMovimiento.descripcion,
     datosMovimiento.tipo,
     datosMovimiento.idCaja,
-    datosMovimiento.idPedido
-
+    datosMovimiento.idPedido,
   ];
   return new Promise((resolve, reject) => {
-    connection.query(sqlInsertarMovimiento, values, function (error, resultado) {
-      if (error) reject(error);
-      else resolve(resultado.insertId);
-    });
+    connection.query(
+      sqlInsertarMovimiento,
+      values,
+      function (error, resultado) {
+        if (error) reject(error);
+        else resolve(resultado.insertId);
+      }
+    );
   });
 }
 function getMovimientos(idCaja) {
@@ -592,10 +661,14 @@ function getMovimientos(idCaja) {
   ORDER BY FechaHora DESC;`;
   const values = [idCaja];
   return new Promise((resolve, reject) => {
-    connection.query(sqlObtenerMovimientos, values, function (error, resultado) {
-      if (error) reject(error);
-      else resolve(resultado);
-    });
+    connection.query(
+      sqlObtenerMovimientos,
+      values,
+      function (error, resultado) {
+        if (error) reject(error);
+        else resolve(resultado);
+      }
+    );
   });
 }
 function getTodosMovimientos() {
@@ -625,16 +698,16 @@ function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
   ORDER BY FechaHora DESC;`;
   const values = [fechaInicio, fechaFin, tipoMovimiento];
   return new Promise((resolve, reject) => {
-    connection.query(sqlObtenerMovimientos, values, function (error, resultado) {
-      if (error) reject(error);
-      else resolve(resultado);
-    });
+    connection.query(
+      sqlObtenerMovimientos,
+      values,
+      function (error, resultado) {
+        if (error) reject(error);
+        else resolve(resultado);
+      }
+    );
   });
 }
-
-
-
-
 
 //Metodos Categoria
 function traerCategoria() {
@@ -659,7 +732,7 @@ function cambiarCategoria(idCategoria, nombre) {
     });
   });
 }
-function crearCategoria(nombre,descripcion) {
+function crearCategoria(nombre, descripcion) {
   const sqlcrearCategoria = `INSERT INTO categoria (Nombre,Descripcion) VALUES ('${nombre}','${descripcion}')`;
   return new Promise((resolve, reject) => {
     connection.query(sqlcrearCategoria, function (err, resultados) {
@@ -682,16 +755,15 @@ function delCategoria(idCategoria) {
   });
 }
 
-
-function udtProductoPedido(estado, idPedido, codProducto,idRegistro) {
-  const sqlActualizar = "UPDATE `pedido_productos` SET `Estado` = ? WHERE `pedido_productos`.`idPedido` = ? AND `pedido_productos`.`codProducto` = ? AND `pedido_productos`.`idRegistro` = ?";
-  const values = [estado, idPedido, codProducto,idRegistro];
+function udtProductoPedido(estado, idPedido, codProducto, idRegistro) {
+  const sqlActualizar =
+    "UPDATE `pedido_productos` SET `Estado` = ? WHERE `pedido_productos`.`idPedido` = ? AND `pedido_productos`.`codProducto` = ? AND `pedido_productos`.`idRegistro` = ?";
+  const values = [estado, idPedido, codProducto, idRegistro];
 
   return new Promise((resolve, reject) => {
     connection.query(sqlActualizar, values, function (err, resultados) {
       if (err) reject(err);
       else {
-        
         resolve(resultados.affectedRows);
       }
       //mostramos la consulta sql:
@@ -700,10 +772,10 @@ function udtProductoPedido(estado, idPedido, codProducto,idRegistro) {
   });
 }
 
-
 // metodos de pago:
 function crearMetodoPago(nombre, descripcion, estado) {
-  const sql = 'INSERT INTO metodospago (Nombre, Descripcion, Estado) VALUES (?, ?, ?)';
+  const sql =
+    "INSERT INTO metodospago (Nombre, Descripcion, Estado) VALUES (?, ?, ?)";
   const values = [nombre, descripcion, estado];
   return new Promise((resolve, reject) => {
     connection.query(sql, values, function (error, resultado) {
@@ -713,7 +785,7 @@ function crearMetodoPago(nombre, descripcion, estado) {
   });
 }
 function obtenerMetodoPagoPorId(idMetodoPago) {
-  const sql = 'SELECT * FROM metodospago WHERE idMetodoPago = ?;';
+  const sql = "SELECT * FROM metodospago WHERE idMetodoPago = ?;";
   const values = [idMetodoPago];
   return new Promise((resolve, reject) => {
     connection.query(sql, values, function (error, resultados) {
@@ -723,7 +795,8 @@ function obtenerMetodoPagoPorId(idMetodoPago) {
   });
 }
 function actualizarMetodoPago(idMetodoPago, nombre, descripcion, estado) {
-  const sql = 'UPDATE metodospago SET Nombre = ?, Descripcion = ?, Estado = ? WHERE idMetodoPago = ?;';
+  const sql =
+    "UPDATE metodospago SET Nombre = ?, Descripcion = ?, Estado = ? WHERE idMetodoPago = ?;";
   const values = [nombre, descripcion, estado, idMetodoPago];
   return new Promise((resolve, reject) => {
     connection.query(sql, values, function (error, resultado) {
@@ -733,7 +806,7 @@ function actualizarMetodoPago(idMetodoPago, nombre, descripcion, estado) {
   });
 }
 function eliminarMetodoPago(idMetodoPago) {
-  const sql = 'DELETE FROM metodospago WHERE idMetodoPago = ?;';
+  const sql = "DELETE FROM metodospago WHERE idMetodoPago = ?;";
   const values = [idMetodoPago];
   return new Promise((resolve, reject) => {
     connection.query(sql, values, function (error, resultado) {
@@ -743,7 +816,7 @@ function eliminarMetodoPago(idMetodoPago) {
   });
 }
 function obtenerMetodosPago() {
-  const sql = 'SELECT * FROM metodospago;';
+  const sql = "SELECT * FROM metodospago;";
   return new Promise((resolve, reject) => {
     connection.query(sql, function (error, resultados) {
       if (error) reject(error);
@@ -752,12 +825,14 @@ function obtenerMetodosPago() {
   });
 }
 
+//MESAS
+function crearMesa(descripcion) {
+  // Utiliza un marcador de posición "?" para los valores que serán insertados
+  const sqlCrearMesa = `INSERT INTO mesa (Descripcion, Estado) VALUES (?, "Disponible")`;
 
-//METODOS MESA
-function crearMesa(descripcion, idMesa) {
-  const sqlCrearMesa = `INSERT INTO mesa (Descripcion, idMesa) VALUES ('${descripcion}', ${idMesa})`;
   return new Promise((resolve, reject) => {
-    connection.query(sqlCrearMesa, function (err, resultados) {
+    // Pasas el SQL y los valores como un array en lugar de concatenarlos directamente
+    connection.query(sqlCrearMesa, [descripcion], function (err, resultados) {
       if (err) reject(err);
       else {
         resolve(resultados);
@@ -766,20 +841,26 @@ function crearMesa(descripcion, idMesa) {
   });
 }
 
+
 function obtenerElPedidoDeUnaMesa(idMesa) {
-  const sqlObtenerId = "SELECT idPedido FROM pedido WHERE idMesa = ? ORDER BY Fecha DESC LIMIT 1";
+  const sqlObtenerId =
+    "SELECT idPedido FROM pedido WHERE idMesa = ? ORDER BY Fecha DESC LIMIT 1";
   return new Promise((resolve, reject) => {
-    connection.query(sqlObtenerId, [idMesa], function (err, resultados, campos) {
-      if (err) {
-        reject(err);
-      } else {
-        if (resultados.length > 0) {
-          resolve(resultados[0].idPedido);
+    connection.query(
+      sqlObtenerId,
+      [idMesa],
+      function (err, resultados, campos) {
+        if (err) {
+          reject(err);
         } else {
-          resolve(null);
+          if (resultados.length > 0) {
+            resolve(resultados[0].idPedido);
+          } else {
+            resolve(null);
+          }
         }
       }
-    });
+    );
   });
 }
 function actualizarEstadoMesa(idMesa, estado) {
@@ -787,7 +868,7 @@ function actualizarEstadoMesa(idMesa, estado) {
   return new Promise((resolve, reject) => {
     connection.query(sqlEstadoMesa, function (err, resultados, campos) {
       if (err) throw console.error(err);
-      else console.log("resultados=>>>", resultados);
+      else console.log("Mesa actualizada:", resultados.affectedRows);
       resolve(resultados);
     });
   });
@@ -817,6 +898,23 @@ function getMesaDePedido(idPedido) {
     });
   });
 }
+
+function cambiarDescripcionMesa(idMesa, descripcion) {
+  const sqlCambiarDescripcion = `UPDATE mesa SET Descripcion = '${descripcion}' WHERE mesa.idMesa = ${idMesa}`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlCambiarDescripcion, function (err, resultados, campos) {
+      if (err) {
+        throw console.error(err);
+      } else {
+        resolve(resultados);
+      }
+    });
+  });
+}
+
+
+
+
 //METODOS TEST
 function test() {
   // const sqlQuery = util.promisify(connection.query)
@@ -852,9 +950,7 @@ async function restablecer() {
   }
 }
 
-
 module.exports = {
-
   login,
   registrar,
   obtenerUsuario,
@@ -863,7 +959,6 @@ module.exports = {
   eliminarUsuario,
   verificarEstadoUsuario,
   cambiarEstadoUsuario,
-
 
   nuevoPedido,
   traerPedidos,
@@ -879,12 +974,14 @@ module.exports = {
   actualizarEstadoMesa,
   traerMesas,
   getMesaDePedido,
+  cambiarDescripcionMesa,
 
   getProductos,
   udtProducto,
   crearProducto,
   agregarProductosAlPedido,
-
+  restarStockProducto,
+  obteneStockProducto,
 
   insertarFactura,
   obtenerFacturas,

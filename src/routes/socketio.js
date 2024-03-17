@@ -29,6 +29,7 @@ function actualizarMesas(){
 }
 function actualizarProductos(){
   io.in("meseros").emit("productos",true)
+  console.log("-----------actualizando productos------------")
 }
 
 //actualizar caja:

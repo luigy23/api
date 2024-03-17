@@ -41,13 +41,16 @@ async function nuevoPedido(req, res) {
     else {
       
       await con.nuevoPedido(pedido);
-
+      io.actualizarProductos();
+    
       io.actualizarPedidos()
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
       io.actualizarMesas()
+     
       res.json("Pedido Enviado");
     }
   } catch (error) {
+    res.status(500).send("Error al crear el pedido");
 
   }
 }
@@ -65,6 +68,7 @@ async function añadirProductoPedido(req, res) {
     io.actualizarPedidos()
     con.udtCambiosPedido(idPedido,cambio)
     con.actualizarEstadoPedido("Pendiente",idPedido)
+    io.actualizarProductos()
   } catch (error) {
     res.status(500).send("Error en el cambio");  }
 
@@ -110,6 +114,7 @@ async function productoCancelado(req, res) {
   io.enviarNotificacion({codProducto:codProducto, mesa:pedido[0].idMesa, estado:"Cancelado"}, pedido[0].Usuario)
 
   await actualizarEstadoPedido(idPedido);
+  io.actualizarProductos()
   io.actualizarPedidos()
   res.json(response);
 }
@@ -138,6 +143,7 @@ async function actualizarEstadoPedido(idPedido) {
     io.actualizarMesas()
 
   }
+  
 }
 //
 module.exports = {
