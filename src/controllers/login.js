@@ -151,7 +151,7 @@ async function verificarLogueo(req, res) {
     const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         res.status(500).json({
-            message: "No hay token pana"
+            message: "No hay token"
         })
         return
     }
@@ -159,21 +159,15 @@ async function verificarLogueo(req, res) {
         const infoToken = jwt.verify(token, "hola")
         const usuario = infoToken.usuario
         const result = await con.verificarEstadoUsuario(usuario)
-        
-        // if (result[0].estado != "Activo") {
-        //     res.status(500).json({
-        //         message: "Usuario no activo"
-        //     })
-        //     return
-        // }
 
-
-
-
+    
+        console.log("-----infoToken-----")
         console.log(infoToken)
+        console.log("------------------")
         res.status(200).json({
             message: "ok",
             usuario: infoToken.usuario,
+            idCargo: infoToken.idCargo,
             result: result[0].estado
         })
     } catch (error) {
