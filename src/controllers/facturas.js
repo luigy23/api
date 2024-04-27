@@ -1,127 +1,125 @@
-const con = require("../mysql.js")
-const  io  = require("../routes/socketio");
+const con = require("../mysql.js");
+const io = require("../routes/socketio");
 
-//crear factura
 async function crearFactura(req, res) {
-    const {  mesa, idMetodoPago, idUsuario, recibido, descuento } = req.body;
-    console.log(req.body);
-    try {
-        // Obtener el pedido de la mesa proporcionada
-        const idPedido = await con.obtenerElPedidoDeUnaMesa(mesa);
+  const { mesa, idMetodoPago, idUsuario, recibido, descuento } = req.body;
+  try {
+    const idPedido = await obtenerPedidoPorMesa(mesa);
+    await verificarEstadoPedido(idPedido);
+    const subtotal = await calcularSubtotal(idPedido);
+    const subtotalIva = subtotal * IVA_TASA;
+    const total = subtotal + subtotalIva - descuento;
+    const idCaja = await obtenerCajaActiva();
 
-        //Verificar el estado del pedido
-        const estadoPedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
-        console.log(estadoPedido);
+    const factura = {
+      numFactura: null,
+      idPedido,
+      idCaja,
+      subtotal,
+      descuento,
+      iva: IVA_TASA,
+      total,
+      idMetodoPago,
+      recibido,
+      cambio: recibido - total,
+      usuario: idUsuario,
+      fecha: new Date(),
+      estado: "Pagado",
+    };
 
-        if (estadoPedido[0].length === 0 || estadoPedido[0].Estado === "Facturado" || estadoPedido[0].Estado === "Cancelado"  ) {
-          return res.status(400).json({ message: "El pedido no existe, ya fue facturado o fue cancelado" });
-        }
+    const resultado = await insertarFacturaYActualizarCaja(
+      factura,
+      idCaja,
+      total
+    );
+    await con.actualizarEstadoMesa(mesa, "Disponible");
+    await con.actualizarEstadoPedido("Facturado", idPedido);
 
-        // Obtener los productos del pedido
-        const pedido = await con.getProductosPedido(idPedido);
-      
-        // Calcular el subtotal del pedido
-        const subtotal = pedido.reduce((total, producto) => {
-          if (producto.Estado === "Cancelado") return total;
-          return total + producto.Precio * producto.Cantidad;
-        }, 0);
-      
-        // Calcular el IVA
-        const iva = 0;
-        const subtotalIva = subtotal * iva;
-      
-        // Calcular el total
-        const total = subtotal + subtotalIva - descuento;
-
-        // Obtener el id de la caja
-        const Caja = await con.obtenerCajaActiva();
-        const idCaja = Caja[0].idCaja;
-        console.log(Caja);
-      
-        // Insertar la factura en la base de datos
-        const factura = {
-          numFactura: null,
-          idPedido,
-          idCaja,
-          subtotal,
-          descuento,
-          iva,
-          total,
-          idMetodoPago,
-          recibido,
-          cambio: recibido - total,
-          usuario: idUsuario,
-          fecha: new Date(),
-          estado: "Pagado",
-        };
-
-      
-
-        const resultado = await con.insertarFactura(factura);
-         //sumar el total de la factura a la caja si no hubo error
-        await con.sumarSaldoCaja(idCaja, total);
-        //actualizar la caja si no hubo error
-        io.actualizarCaja();
-     
-
-      
-        // Actualizar el estado de la mesa y del pedido
-        await con.actualizarEstadoMesa(mesa, "Disponible");
-        await con.actualizarEstadoPedido( "Facturado", idPedido);
-      
-        res.status(200).json({
-          resultado,
-          factura: {
-            numFactura: resultado.insertId,
-            idPedido,
-            idCaja,
-            subtotal,
-            descuento,
-            iva,
-            total,
-            idMetodoPago,
-            recibido,
-            cambio: recibido - total,
-            usuario: idUsuario,
-            fecha: new Date(),
-            estado: "Pagado",
-          },
-        });
-      } catch (err) {
-        console.log(err);
-        res.status(500).json(err);
-      }
-    
-  }
-
-//obtener Facturas
-async function obtenerFacturas(req, res) {
-    try {
-        const facturas = await con.obtenerFacturas({fechaInicio: "2021-05-01", fechaFin: "2023-04-25"}, 10)
-        res.status(200).json(facturas)
-    } catch (error) {
-        res.status(500).json({
-            message: "Error al traer facturas"
-        })
+    res.status(200).json({
+      resultado,
+      factura: {
+        ...factura,
+        numFactura: resultado.insertId,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    if (!res.headersSent) {
+      res.status(500).json({ message: err.message });
     }
-
   }
-
-//obyener factura por id
-async function obtenerFacturaPorId(req, res) {
-    try {
-        const { id } = req.params;
-        const factura = await con.obtenerFacturaPorId(id);
-        res.status(200).json(factura);
-    } catch (error) {
-        res.status(500).json({
-            message: "Error al traer factura"
-        })
-    }
 }
 
+async function obtenerFacturas(req, res) {
+  try {
+    const facturas = await con.obtenerFacturas(
+      { fechaInicio: "2021-05-01", fechaFin: "2023-04-25" },
+      10
+    );
+    res.status(200).json(facturas);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error al traer facturas",
+    });
+  }
+}
 
+async function obtenerFacturaPorId(req, res) {
+  try {
+    const { id } = req.params;
+    const factura = await con.obtenerFacturaPorId(id);
+    res.status(200).json(factura);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error al traer factura",
+    });
+  }
+}
 
+//Services
 
+// Constantes
+const IVA_TASA = 0; // Esto debería ser ajustado al valor actual de IVA.
+
+async function obtenerPedidoPorMesa(mesa) {
+  return await con.obtenerElPedidoDeUnaMesa(mesa);
+}
+
+async function verificarEstadoPedido(idPedido) {
+  const estadoPedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
+  if (
+    estadoPedido[0].length === 0 ||
+    estadoPedido[0].Estado === "Facturado" ||
+    estadoPedido[0].Estado === "Cancelado"
+  ) {
+    throw new Error("El pedido no existe, ya fue facturado o fue cancelado");
+  }
+  return estadoPedido;
+}
+
+async function calcularSubtotal(idPedido) {
+  const pedido = await con.getProductosPedido(idPedido);
+  let subtotal = 0;
+  for (const producto of pedido) {
+    if (producto.Estado === "Cancelado") continue;
+    if (producto.Estado === "Pendiente") {
+      throw new Error("El pedido no está listo");
+    }
+    subtotal += producto.Precio * producto.Cantidad;
+  }
+  return subtotal;
+}
+
+async function obtenerCajaActiva() {
+  const Caja = await con.obtenerCajaActiva();
+  return Caja[0].idCaja;
+}
+
+async function insertarFacturaYActualizarCaja(factura, idCaja, total) {
+  const resultado = await con.insertarFactura(factura);
+  await con.sumarSaldoCaja(idCaja, total);
+  io.actualizarCaja();
+  return resultado;
+}
 
 module.exports = { crearFactura, obtenerFacturas, obtenerFacturaPorId };
