@@ -39,12 +39,20 @@ app.use(express.urlencoded({ extended: false }))
 app.use(require('./routes/index'))
 app.use(errores)
 app.get('/productos/imagenes/:id', (req, res) => {
-
-  const id = req.params.id
-  const ruta = path.join(__dirname,"../public/imagenes/",id+".jpg")
-  res.sendFile(ruta);
+  const id = req.params.id;
+  // Asegura que el id tenga la extensión .jpg solo una vez.
+  const imagenNombre = id.endsWith('.jpg') ? id : `${id}.jpg`;
+  const ruta = path.join(__dirname, "../public/imagenes/", imagenNombre);
   
+  // Enviar archivo o manejar error si el archivo no existe
+  res.sendFile(ruta, (err) => {
+    if (err) {
+      console.log(err); // Imprime el error para depuración
+      res.status(404).send('No se encontró la imagen solicitada');
+    }
+  });
 });
+
 
 
 

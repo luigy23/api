@@ -1,6 +1,7 @@
 const con = require("../mysql.js");
 const  io  = require("../routes/socketio");
-const fs = require("fs")
+const fs = require('fs').promises;
+const path = require('path');
 
 
 async function getProductos(req, res){
@@ -30,26 +31,35 @@ async  function udtProducto (req, res) {
 }
 
 
-async function crearProducto (req, res) {
-    const producto =JSON.parse(req.body.producto)
-  
-    if (req.file){
-      const imagenPath = req.file.path
-      const nombre = producto.codigo
-      const nuevoNombre = 'public/imagenes/'+nombre+'.jpg'
-      const productoConImagen = {...producto, imagen:`/productos/imagenes/${nombre}`}
-      await fs.rename(imagenPath,nuevoNombre,(err) => err && console.error(err))
-      await con.crearProducto(productoConImagen)
-      res.json(productoConImagen)
-      
-    }else{
-      res.json("Envia una imagen")
-      const  response  =await con.crearProducto(producto)
-      
-      console.log("producto creado", response)
+
+
+// Función principal para crear el producto
+async function crearProducto(req, res) {
+  try {
+    const producto = JSON.parse(req.body.producto);
+    console.log("producto", producto);
+
+    const { valido, producto: productoPreparado } = prepararProducto(producto);
+
+    if (!valido) {
+      return res.status(400).json({ error: "Faltan campos por completar" });
     }
-    io.actualizarProductos()
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Envía una imagen" });
+    }
+
+    const productoConImagen = await manejarImagenProducto(req, productoPreparado);
+    const productoCreado = await insertarProductoEnDB(productoConImagen);
+
+    res.json(productoCreado);
+    io.actualizarProductos(); // Asegúrate de que esta función se maneje correctamente
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
+}
+
 
 async function delProducto (req, res) {
   const {id} = req.params
@@ -60,6 +70,56 @@ async function delProducto (req, res) {
   io.actualizarProductos()
 }
 
+
+
+//funciones de servicio
+// Valida los campos requeridos del producto
+// Prepara el producto, estableciendo valores predeterminados si son necesarios
+function prepararProducto(producto) {
+  // Establece el estado a 'Disponible' si no se ha proporcionado uno
+  if (!producto.estado) {
+    producto.estado = 'Disponible';
+  }
+  
+  // Verifica que los campos requeridos estén presentes
+  const { codigo, nombre, descripcion, categoria, precio, stock } = producto;
+  if (!codigo || !nombre || !descripcion || !categoria || !precio || !stock) {
+    return { valido: false };
+  }
+
+  return { valido: true, producto };
+}
+
+
+// Maneja el archivo de imagen del producto y actualiza la información del producto
+async function manejarImagenProducto(req, producto) {
+  const imagenPath = req.file.path;
+  const directorioDestino = 'public/imagenes/';
+  const extension = path.extname(req.file.originalname); // Obtiene la extensión del archivo original
+  const nuevoNombre = path.join(directorioDestino, `${producto.codigo}${extension}`);
+
+  // Asegurarse de que el directorio existe
+  await fs.mkdir(directorioDestino, { recursive: true });
+
+  // Mover el archivo al nuevo destino
+  try {
+      await fs.rename(imagenPath, nuevoNombre);
+  } catch (err) {
+      // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
+      await fs.copyFile(imagenPath, nuevoNombre);
+      await fs.unlink(imagenPath);
+  }
+  
+  return { ...producto, imagen: `/productos/imagenes/${producto.codigo}${extension}` };
+}
+
+
+// Inserta el producto en la base de datos
+async function insertarProductoEnDB(producto) {
+  const response = await con.crearProducto(producto);
+  console.log("producto creado", response);
+  return producto;
+}
 
 
 
