@@ -7,3 +7,6 @@ wwebjs_auth
 node_modules
 package-lock.json
 .env
+
+# /public/imagenes
+/public/imagenes

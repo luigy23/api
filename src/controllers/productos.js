@@ -45,9 +45,7 @@ async function crearProducto(req, res) {
       return res.status(400).json({ error: "Faltan campos por completar" });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: "Envía una imagen" });
-    }
+
 
     const productoConImagen = await manejarImagenProducto(req, productoPreparado);
     const productoCreado = await insertarProductoEnDB(productoConImagen);
@@ -93,26 +91,31 @@ function prepararProducto(producto) {
 
 // Maneja el archivo de imagen del producto y actualiza la información del producto
 async function manejarImagenProducto(req, producto) {
-  const imagenPath = req.file.path;
+  let imagenPath = req.file ? req.file.path : null;
   const directorioDestino = 'public/imagenes/';
-  const extension = path.extname(req.file.originalname); // Obtiene la extensión del archivo original
+  const extension = req.file ? path.extname(req.file.originalname) : '.jpg'; // Establece '.jpg' como extensión predeterminada
   const nuevoNombre = path.join(directorioDestino, `${producto.codigo}${extension}`);
 
   // Asegurarse de que el directorio existe
   await fs.mkdir(directorioDestino, { recursive: true });
 
-  // Mover el archivo al nuevo destino
-  try {
-      await fs.rename(imagenPath, nuevoNombre);
-  } catch (err) {
-      // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
-      await fs.copyFile(imagenPath, nuevoNombre);
-      await fs.unlink(imagenPath);
+  if (imagenPath) {
+    // Mover el archivo al nuevo destino
+    try {
+        await fs.rename(imagenPath, nuevoNombre);
+    } catch (err) {
+        // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
+        await fs.copyFile(imagenPath, nuevoNombre);
+        await fs.unlink(imagenPath);
+    }
+  } else {
+    // Si no se proporciona una imagen, usar una imagen por defecto
+    const imagenPorDefecto = 'public/default.jpg'; // Ruta a la imagen por defecto
+    await fs.copyFile(imagenPorDefecto, nuevoNombre);
   }
   
   return { ...producto, imagen: `/productos/imagenes/${producto.codigo}${extension}` };
 }
-
 
 // Inserta el producto en la base de datos
 async function insertarProductoEnDB(producto) {
