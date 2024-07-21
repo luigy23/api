@@ -9,4 +9,4 @@ package-lock.json
 .env
 
 # /public/imagenes
-/public/imagenes
+/public/imagenes/*
