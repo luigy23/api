@@ -733,7 +733,7 @@ function cambiarCategoria(idCategoria, nombre) {
   });
 }
 function crearCategoria(nombre, descripcion) {
-  const sqlcrearCategoria = `INSERT INTO categoria (Nombre,Descripcion) VALUES ('${nombre}','${descripcion}')`;
+  const sqlcrearCategoria = `INSERT INTO categoria (Nombre,Descripcion, Estado) VALUES ('${nombre}','${descripcion}', 'Activo')`;
   return new Promise((resolve, reject) => {
     connection.query(sqlcrearCategoria, function (err, resultados) {
       if (err) reject(err);
