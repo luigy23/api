@@ -371,11 +371,11 @@ function obteneStockProducto(codigoProducto) {
 }
 
 function crearProducto(producto) {
-  const { nombre, descripcion, precio, estado, imagen, codigo, categoria } =
+  const { nombre, descripcion, precio, estado, imagen, codigo, categoria, stock } =
     producto;
   const sqludtProducto = `INSERT INTO productos 
-   (codProducto, Nombre, Descripcion, idCategoria, Precio, Imagen, Estado) 
-   VALUES (?, ?, ?, ?, ?, ?, ?)`;
+   (codProducto, Nombre, Descripcion, idCategoria, Precio, Imagen, Estado, Stock) 
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
   const values = [
     codigo,
     nombre,
@@ -384,6 +384,7 @@ function crearProducto(producto) {
     precio,
     imagen,
     estado,
+    stock,
   ];
 
   return new Promise((resolve, reject) => {
