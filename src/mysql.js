@@ -218,14 +218,16 @@ async function nuevoPedido(pedido) {
 
 function traerPedidos(filtro, values, limit) {
   const sqlPedidos =
-    "SELECT * FROM `pedido` " +
-    filtro +
+    "SELECT pedido.*, mesa.Descripcion " +
+    "FROM `pedido` " +
+    "JOIN `mesa` ON pedido.idMesa = mesa.idMesa " +
+    filtro.replace(/(\bEstado\b)/g, 'pedido.Estado') +
     " ORDER BY `pedido`.`Fecha` DESC " +
     (limit ? "LIMIT ?" : "");
 
   // Si "limit" es un número válido, lo agregamos al arreglo "values"
   if (limit) {
-    //convetir a entero
+    // Convertir a entero
     limit = parseInt(limit);
     values.push(limit);
   }
@@ -239,6 +241,7 @@ function traerPedidos(filtro, values, limit) {
     });
   });
 }
+
 function actualizarEstadoPedido(estado, idPedido) {
   const sqlEstadoPedido = `UPDATE pedido SET Estado = '${estado}' WHERE pedido.idPedido = ${idPedido}`;
   connection.query(sqlEstadoPedido, function (err, resultados, campos) {
