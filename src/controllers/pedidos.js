@@ -33,6 +33,9 @@ async function verificarEstadoMesa(idMesa) {
 async function nuevoPedido(req, res) {
   const idMesa = req.body.Mesa;
   const pedido = req.body;
+
+  
+
   try {
     if (!idMesa) res.status(500).send("No se seleccionó mesa");
     

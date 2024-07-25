@@ -296,10 +296,11 @@ async function udtCambiosPedido(idPedido, cambio) {
   });
 }
 
+
 //METODOS PRODUCTOS
 
 function getProductos() {
-  const sqlTraerProductos = `SELECT * FROM productos`;
+  const sqlTraerProductos = `SELECT * FROM 'productos' ORDER BY CASE WHEN Stock = 0 THEN 1 ELSE 0 END;`;
   return new Promise((resolve, reject) => {
     connection.query(sqlTraerProductos, function (err, resultados) {
       if (err) reject(err);
