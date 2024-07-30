@@ -93,7 +93,20 @@ function prepararProducto(producto) {
 async function manejarImagenProducto(req, producto) {
   let imagenPath = req.file ? req.file.path : null;
   const directorioDestino = 'public/imagenes/';
-  const extension = req.file ? path.extname(req.file.originalname) : '.jpg'; // Establece '.jpg' como extensión predeterminada
+  
+  // Determinar la extensión correcta
+  let extension = '.jpg'; // Extensión predeterminada
+  if (req.file) {
+    const mimeType = req.file.mimetype;
+    if (mimeType === 'image/jpeg') extension = '.jpg';
+    else if (mimeType === 'image/png') extension = '.png';
+    else if (mimeType === 'image/webp') extension = '.webp';
+    else {
+      // Si no es ninguno de los tipos soportados, lanzar un error
+      throw new Error('Tipo de archivo no soportado');
+    }
+  }
+
   const nuevoNombre = path.join(directorioDestino, `${producto.codigo}${extension}`);
 
   // Asegurarse de que el directorio existe
@@ -102,11 +115,11 @@ async function manejarImagenProducto(req, producto) {
   if (imagenPath) {
     // Mover el archivo al nuevo destino
     try {
-        await fs.rename(imagenPath, nuevoNombre);
+      await fs.rename(imagenPath, nuevoNombre);
     } catch (err) {
-        // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
-        await fs.copyFile(imagenPath, nuevoNombre);
-        await fs.unlink(imagenPath);
+      // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
+      await fs.copyFile(imagenPath, nuevoNombre);
+      await fs.unlink(imagenPath);
     }
   } else {
     // Si no se proporciona una imagen, usar una imagen por defecto
