@@ -20,7 +20,8 @@ const multer  = require('multer')
 const upload = multer({ dest: 'public/imagenes' })
 
 const {io} = require('./socketio')
-const path = require('path')
+const path = require('path');
+const { printText, imprimirTicketComanda } = require('../services/ticket.js');
 
 
 router.get('/productos',productos.getProductos)
@@ -117,7 +118,7 @@ router.get('/sockets', async (req, res) =>{
 
 })
 router.get('/test', async (req, res) => {
-  res.json("test")
+  imprimirTicketComanda(1, "Usuario", [{nombre:"Producto", cantidad:1, precio:1}], 1)
   
   })
 

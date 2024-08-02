@@ -3,6 +3,7 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const mysql = require("mysql2");
+const { imprimirTicketComanda } = require("./services/ticket");
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
@@ -433,6 +434,7 @@ function getProductosPedido(idPedido) {
 }
 
 async function agregarProductosAlPedido(id, productos, idRegistro = 0) {
+
   // Validar los parámetros de entrada
   if (!id || !productos || !Array.isArray(productos)) {
     throw new Error("Parámetros de entrada incorrectos");

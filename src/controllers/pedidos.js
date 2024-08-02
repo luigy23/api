@@ -1,5 +1,6 @@
 const con = require("../mysql.js");
 const  io  = require("../routes/socketio");
+const { imprimirTicketComanda } = require("../services/ticket.js");
 
 async function traerPedidos(req, res) {
   
@@ -34,7 +35,7 @@ async function nuevoPedido(req, res) {
   const idMesa = req.body.Mesa;
   const pedido = req.body;
 
-  
+  console.log("Pedido:", pedido);
 
   try {
     if (!idMesa) res.status(500).send("No se seleccionó mesa");
@@ -50,9 +51,40 @@ async function nuevoPedido(req, res) {
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
       io.actualizarMesas()
      
+
+
+      // Pedido: {
+      //   Mesero: 'luigy',
+      //   Mesa: 8,
+      //   Productos: [
+      //     {
+      //       nombre: 'pollo',
+      //       id: 'pollo',
+      //       cantidad: 1,
+      //       precio: 1,
+      //       comentario: ''
+      //     },
+      //     {
+      //       nombre: 'Carne asada',
+      //       id: 'carne',
+      //       cantidad: 1,
+      //       precio: 2000,
+      //       comentario: 'easd'
+      //     }
+      //   ],
+      //   Total: 2001
+      // }
+
+
+
+      await imprimirTicketComanda(pedido);
       res.json("Pedido Enviado");
+
+     
+
     }
   } catch (error) {
+    console.log(error);
     res.status(500).send("Error al crear el pedido");
 
   }
