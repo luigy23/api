@@ -54,11 +54,7 @@ async function login(req, res) {
         }
         const token = jwt.sign(infoToken, "hola")
         console.log(token)
-        // enviamos el token para que el cliente lo guarde en una cookie
-        // res.setHeader('Set-Cookie', serialize('token', token, {
-        //     httpOnly: false,
-        //     maxAge: 60 * 60 * 24 * 7 // 1 week
-        //     }))
+    
         res.status(200).json({
             usuario: user[0].Usuario,
             message: "Sesion iniciada",
@@ -148,7 +144,32 @@ async function registrar(req, res) {
 
 //verificar logueo
 async function verificarLogueo(req, res) {
+
+    //funcio desde el cliente:
+    // const verificarLogueo = async () => {
+    //     //verifico si el usuario esta logueado en el servidor
+    //     const token = localStorage.getItem("token")
+    //     const res = await axios.get(`${process.env.REACT_APP_API}/login/verificar`,
+    //     {headers
+    //       :{
+    //         Authorization: `Bearer ${token}`
+    //       },
+    //     })
+    console.log("-----req-----")
+    console.log(req.headers)
+    console.log("------------------")
+
+
+    if (!req.headers.authorization) {
+        res.status(500).json({
+            message: "No hay token"
+        })
+        return
+    }
+
+
     const token = req.headers.authorization.split(" ")[1]
+    console.log("este es el token: "+token)
     if (!token) {
         res.status(500).json({
             message: "No hay token"
@@ -157,8 +178,13 @@ async function verificarLogueo(req, res) {
     }
     try {
         const infoToken = jwt.verify(token, "hola")
+        //el token debe estar en 
+
+
+
         const usuario = infoToken.usuario
         const result = await con.verificarEstadoUsuario(usuario)
+
 
     
         console.log("-----infoToken-----")
@@ -171,6 +197,9 @@ async function verificarLogueo(req, res) {
             result: result[0].estado
         })
     } catch (error) {
+        console.log("-----error-----")
+        console.log(error)
+        console.log("------------------")
         res.status(500).json({
             error: "Token invalido1",
             message: error

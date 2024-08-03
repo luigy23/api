@@ -22,7 +22,7 @@ app.use(cookieParser())
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(cors(
-  // Permitimos todos los origenes y las cookies de todos los origenes
+  // Permitimos todos los origenes y las cookies de todos los origenes y con cookies
   {origin: '*', credentials: true}
     
 
@@ -33,7 +33,7 @@ app.use(cors(
 
 
 
-
+//app.use(cors())
 app.use(express.urlencoded({ extended: false }))
 // routes
 app.use(require('./routes/index'))
@@ -63,7 +63,7 @@ app.use(function(err, req, res, next) {
 // iniciar server
 
 
-server.listen(process.env.PORT || 4000, () => {
+server.listen(process.env.PORT || 4000, '0.0.0.0', () => {
   console.log('server port : ' + (process.env.PORT || 4000))
   console.log('DB: ' + (process.env.DB_NAME || "restaurante2"))
 })

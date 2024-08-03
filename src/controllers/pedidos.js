@@ -104,6 +104,27 @@ async function añadirProductoPedido(req, res) {
     con.udtCambiosPedido(idPedido,cambio)
     con.actualizarEstadoPedido("Pendiente",idPedido)
     io.actualizarProductos()
+    io.actualizarPedidos()
+    await con.actualizarEstadoMesa(idMesa, "Ocupado");
+    io.actualizarMesas()
+    console.log("Productos añadidos:", productos);
+
+    const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
+  
+    const MesaDescripcion = await con.traerMesas(idMesa) // MesaDescripcion: [ { idMesa: 3, Descripcion: 'Mesa 3', Estado: 'Ocupado' } ]
+    console.log("MesaDescripcion:", MesaDescripcion);
+       
+   
+    
+    const impresion = {
+         MesaDescripcion: MesaDescripcion[0].Descripcion,
+         Mesero: pedido[0].Usuario,
+         Productos: productos,
+       };
+
+      imprimirTicketComanda(impresion);
+    
+
   } catch (error) {
     res.status(500).send("Error en el cambio");  }
 

@@ -63,6 +63,11 @@ function imprimirTicketComanda(pedido) {
     printer.drawLine();
     printer.cut();
     printer.execute();
+
+    //limpiar la impresora
+    printer.clear();
+    
+
     }
 
 
