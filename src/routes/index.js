@@ -21,7 +21,8 @@ const upload = multer({ dest: 'public/imagenes' })
 
 const {io} = require('./socketio')
 const path = require('path');
-const { printText, imprimirTicketComanda } = require('../services/ticket.js');
+const { printText, imprimirTicketComanda, imprimirCuentaMesero } = require('../services/ticket.js');
+const { ImprimirCuenta } = require('../controllers/cuenta.js');
 
 
 router.get('/productos',productos.getProductos)
@@ -101,6 +102,11 @@ router.put('/metodosPago/:id',verficarToken, metodosPago.actualizarMetodoPago);
 router.delete('/metodosPago/:id',verficarToken, metodosPago.eliminarMetodoPago);
 
 
+//impresion
+router.post('/cuenta/imprimir',verficarToken, ImprimirCuenta);
+
+
+
 //otros
 router.get('/reset', async (req, res) => {
 
@@ -118,7 +124,7 @@ router.get('/sockets', async (req, res) =>{
 
 })
 router.get('/test', async (req, res) => {
-  imprimirTicketComanda(1, "Usuario", [{nombre:"Producto", cantidad:1, precio:1}], 1)
+  imprimirCuentaMesero();
   
   })
 

@@ -432,6 +432,22 @@ function getProductosPedido(idPedido) {
     );
   });
 }
+function udtProductoPedido(estado, idPedido, codProducto, idRegistro) {
+  const sqlActualizar =
+    "UPDATE `pedido_productos` SET `Estado` = ? WHERE `pedido_productos`.`idPedido` = ? AND `pedido_productos`.`codProducto` = ? AND `pedido_productos`.`idRegistro` = ?";
+  const values = [estado, idPedido, codProducto, idRegistro];
+
+  return new Promise((resolve, reject) => {
+    connection.query(sqlActualizar, values, function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados.affectedRows);
+      }
+      //mostramos la consulta sql:
+      console.log(this.sql);
+    });
+  });
+}
 
 async function agregarProductosAlPedido(id, productos, idRegistro = 0) {
 
@@ -598,6 +614,11 @@ function obtenerFacturaPorId(idFactura) {
   });
 }
 
+//Cuenta - Impresion de ticket
+
+
+
+
 //METODOS CAJA
 function inicializarCaja(estado, saldoInicial) {
   const fecha = new Date();
@@ -762,22 +783,7 @@ function delCategoria(idCategoria) {
   });
 }
 
-function udtProductoPedido(estado, idPedido, codProducto, idRegistro) {
-  const sqlActualizar =
-    "UPDATE `pedido_productos` SET `Estado` = ? WHERE `pedido_productos`.`idPedido` = ? AND `pedido_productos`.`codProducto` = ? AND `pedido_productos`.`idRegistro` = ?";
-  const values = [estado, idPedido, codProducto, idRegistro];
 
-  return new Promise((resolve, reject) => {
-    connection.query(sqlActualizar, values, function (err, resultados) {
-      if (err) reject(err);
-      else {
-        resolve(resultados.affectedRows);
-      }
-      //mostramos la consulta sql:
-      console.log(this.sql);
-    });
-  });
-}
 
 // metodos de pago:
 function crearMetodoPago(nombre, descripcion, estado) {

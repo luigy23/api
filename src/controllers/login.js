@@ -10,7 +10,6 @@ const z = require('zod')
 async function login(req, res) {
 
     const { usuario, contraseña } = req.body;
-    console.log(req.body)
     try {
         //verificamos que hayan ingresado usuario y contraseña
         if (usuario == "" || contraseña == "") {
@@ -44,12 +43,13 @@ async function login(req, res) {
             })
             return
         }
-        console.log("el usuario loguead:",user[0].Estado)
 
         //si todo esta bien, creamos el token
         const infoToken = {
             usuario: user[0].Usuario,
             idCargo: user[0].idCargo,
+            nombre: user[0].Nombres+" "+user[0].Apellidos,
+            
 
         }
         const token = jwt.sign(infoToken, "hola")
@@ -58,7 +58,8 @@ async function login(req, res) {
         res.status(200).json({
             usuario: user[0].Usuario,
             message: "Sesion iniciada",
-            token: token
+            token: token,
+            nombre: user[0].Nombres+" "+user[0].Apellidos,
         })
 
 
@@ -145,19 +146,7 @@ async function registrar(req, res) {
 //verificar logueo
 async function verificarLogueo(req, res) {
 
-    //funcio desde el cliente:
-    // const verificarLogueo = async () => {
-    //     //verifico si el usuario esta logueado en el servidor
-    //     const token = localStorage.getItem("token")
-    //     const res = await axios.get(`${process.env.REACT_APP_API}/login/verificar`,
-    //     {headers
-    //       :{
-    //         Authorization: `Bearer ${token}`
-    //       },
-    //     })
-    console.log("-----req-----")
-    console.log(req.headers)
-    console.log("------------------")
+
 
 
     if (!req.headers.authorization) {
@@ -169,7 +158,7 @@ async function verificarLogueo(req, res) {
 
 
     const token = req.headers.authorization.split(" ")[1]
-    console.log("este es el token: "+token)
+
     if (!token) {
         res.status(500).json({
             message: "No hay token"
@@ -178,7 +167,6 @@ async function verificarLogueo(req, res) {
     }
     try {
         const infoToken = jwt.verify(token, "hola")
-        //el token debe estar en 
 
 
 
@@ -186,14 +174,12 @@ async function verificarLogueo(req, res) {
         const result = await con.verificarEstadoUsuario(usuario)
 
 
-    
-        console.log("-----infoToken-----")
-        console.log(infoToken)
-        console.log("------------------")
+
         res.status(200).json({
             message: "ok",
             usuario: infoToken.usuario,
             idCargo: infoToken.idCargo,
+            nombre: infoToken.nombre,
             result: result[0].estado
         })
     } catch (error) {

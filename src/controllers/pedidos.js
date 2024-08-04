@@ -52,31 +52,6 @@ async function nuevoPedido(req, res) {
       io.actualizarMesas()
      
 
-
-      // Pedido: {
-      //   Mesero: 'luigy',
-      //   Mesa: 8,
-      //   Productos: [
-      //     {
-      //       nombre: 'pollo',
-      //       id: 'pollo',
-      //       cantidad: 1,
-      //       precio: 1,
-      //       comentario: ''
-      //     },
-      //     {
-      //       nombre: 'Carne asada',
-      //       id: 'carne',
-      //       cantidad: 1,
-      //       precio: 2000,
-      //       comentario: 'easd'
-      //     }
-      //   ],
-      //   Total: 2001
-      // }
-
-
-
       await imprimirTicketComanda(pedido);
       res.json("Pedido Enviado");
 
@@ -105,13 +80,13 @@ async function añadirProductoPedido(req, res) {
     con.actualizarEstadoPedido("Pendiente",idPedido)
     io.actualizarProductos()
     io.actualizarPedidos()
-    await con.actualizarEstadoMesa(idMesa, "Ocupado");
+    await con.actualizarEstadoMesa("Ocupado",idMesa );
     io.actualizarMesas()
     console.log("Productos añadidos:", productos);
 
     const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
   
-    const MesaDescripcion = await con.traerMesas(idMesa) // MesaDescripcion: [ { idMesa: 3, Descripcion: 'Mesa 3', Estado: 'Ocupado' } ]
+    const MesaDescripcion = await con.traerMesas(idMesa) 
     console.log("MesaDescripcion:", MesaDescripcion);
        
    
