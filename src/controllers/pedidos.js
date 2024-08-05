@@ -32,40 +32,43 @@ async function verificarEstadoMesa(idMesa) {
 }
 
 async function nuevoPedido(req, res) {
-  const idMesa = req.body.Mesa;
-  const pedido = req.body;
-
-  console.log("Pedido:", pedido);
-
   try {
-    if (!idMesa) res.status(500).send("No se seleccionó mesa");
-    
+    const idMesa = req.body.Mesa;
+    const pedido = req.body;
+
+
+    if (!idMesa) {
+      return res.status(400).json({ error: 'No se seleccionó mesa' });
+    }
+
+    // Validar datos del pedido
+    if (!pedido || !pedido.Productos ) {
+      console.log(pedido);
+      return res.status(400).json({ error: 'Faltan datos del pedido' });
+    }
+
     const estadoMesa = await verificarEstadoMesa(idMesa);
-    if (estadoMesa) res.status(500).send("La Mesa está ocupada");
-    else {
-      
+    if (estadoMesa) {
+      return res.status(400).json({ error: 'La Mesa está ocupada' });
+    }
+
+    try {
       await con.nuevoPedido(pedido);
       io.actualizarProductos();
-    
-      io.actualizarPedidos()
+      io.actualizarPedidos();
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
-      io.actualizarMesas()
-     
-
+      io.actualizarMesas();
       await imprimirTicketComanda(pedido);
-      res.json("Pedido Enviado");
-
-     
-
+      res.json({ mensaje: 'Pedido Enviado' });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: 'Error al crear el pedido' });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send("Error al crear el pedido");
-
+    res.status(500).json({ error: 'Error al crear el pedido' });
   }
 }
-
-
 async function añadirProductoPedido(req, res) {
   const { idMesa, productos } = req.body;
   const idPedido = await con.obtenerElPedidoDeUnaMesa(idMesa);
@@ -80,7 +83,7 @@ async function añadirProductoPedido(req, res) {
     con.actualizarEstadoPedido("Pendiente",idPedido)
     io.actualizarProductos()
     io.actualizarPedidos()
-    await con.actualizarEstadoMesa("Ocupado",idMesa );
+    await con.actualizarEstadoMesa(idMesa, "Ocupado");
     io.actualizarMesas()
     console.log("Productos añadidos:", productos);
 
