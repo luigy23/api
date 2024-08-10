@@ -23,7 +23,7 @@ const {io} = require('./socketio')
 const path = require('path');
 const { printText, imprimirTicketComanda, imprimirCuentaMesero } = require('../services/ticket.js');
 const { ImprimirCuenta } = require('../controllers/cuenta.js');
-
+const reportes = require('../controllers/reportes.js')
 
 router.get('/productos',productos.getProductos)
 router.put('/productos', upload.single('imagen'),productos.udtProducto)
@@ -94,6 +94,9 @@ router.get('/movimientos',verficarToken, movimientos.getMovimientos)
 router.get('/movimientos/todos',verficarToken, movimientos.getTodosMovimientos)
 router.post('/movimientos/filtrados',verficarToken, movimientos.getMovimientosFiltrados)
 
+//reportes
+router.post('/reportes/ventas',verficarToken, reportes.obtenerVentas)
+router.post('/reportes/ventasMesero',verficarToken, reportes.obtenerVentasMesero)
 // Métodos de pago
 router.post('/metodosPago',verficarToken, metodosPago.crearMetodoPago);
 router.get('/metodosPago',verficarToken, metodosPago.obtenerMetodosPago);

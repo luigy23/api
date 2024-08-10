@@ -680,7 +680,7 @@ function insertarMovimiento(datosMovimiento) {
 }
 function getMovimientos(idCaja) {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
+  SELECT movimientos.*, mesa.Descripcion as Mesa, pedido.Usuario as Usuario
   FROM movimientos
   LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
   LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
@@ -724,7 +724,7 @@ function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
   WHERE movimientos.FechaHora BETWEEN ? AND ?
   AND movimientos.Tipo = ?
   ORDER BY FechaHora DESC;`;
-  const values = [fechaInicio, fechaFin, tipoMovimiento];
+  const values = [fechaInicio, fechaFin+" 23:59", tipoMovimiento];
   return new Promise((resolve, reject) => {
     connection.query(
       sqlObtenerMovimientos,
@@ -736,6 +736,38 @@ function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
     );
   });
 }
+//Reportes de ventas
+
+function obtenerVentas(fechas) {
+  console.log(fechas);
+  const sqlObtenerVentas = `
+  SELECT COUNT(*) AS CantidadPedidos, SUM(CASE WHEN Estado = 'facturado' THEN Total ELSE 0 END) AS TotalFacturado FROM pedido WHERE Fecha BETWEEN ? AND ?;`;
+  const values = [fechas.fechaInicio, fechas.fechaFin + " 23:59"];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerVentas, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    }
+    );
+  });
+}
+
+function obtenerVentasMeseros(fechas) {
+  const sqlObtenerVentasMeseros = `SELECT p.Usuario AS Mesero, COUNT(DISTINCT p.idPedido) AS CantidadPedidos, SUM(p.Total) AS TotalVentas, SUM(f.Propina) AS TotalPropinas, SUM(p.Total) + SUM(f.Propina) AS TotalVentasConPropinas FROM pedido p LEFT JOIN factura f ON p.idPedido = f.idPedido WHERE p.Estado = 'Facturado' AND f.Estado = 'Pagado' 
+  and p.Fecha BETWEEN ? AND ?
+  GROUP BY p.Usuario ORDER BY TotalVentasConPropinas DESC; `;
+  const values = [fechas.fechaInicio, fechas.fechaFin+" 23:59"];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerVentasMeseros, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  }
+  );
+}
+
+
+
 
 //Metodos Categoria
 function traerCategoria() {
@@ -925,7 +957,10 @@ function cambiarDescripcionMesa(idMesa, descripcion) {
   });
 }
 
+//Reportes
 
+function obtenerReporteVentas(fechas) {
+}
 
 
 //METODOS TEST
@@ -1016,6 +1051,8 @@ module.exports = {
   getMovimientos,
   getTodosMovimientos,
   getMovimientosFiltrados,
+  obtenerVentas,
+  obtenerVentasMeseros,
 
   crearMetodoPago,
   obtenerMetodoPagoPorId,

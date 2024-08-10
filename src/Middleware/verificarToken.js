@@ -11,7 +11,7 @@ const verificarToken = async (req, res, next) => {
 
     // sacamos el token de la cabecera Authorization (Bearer <token>)
     const token = req.headers.authorization.split(" ")[1]
-    console.log("este es el token: "+token)
+   // console.log("este es el token: "+token)
     if (!token) {
         res.status(500).json({
             message: "No hay token para verificar"
@@ -36,7 +36,7 @@ const verificarToken = async (req, res, next) => {
 
 
 
-        console.log(infoToken)
+//        console.log(infoToken)
     } catch (error) {
         res.status(500).json({
             error: "Token invalido",

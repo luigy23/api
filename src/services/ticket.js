@@ -165,6 +165,17 @@ async function imprimirCuentaMesero(pedido) {
     });
     printer.bold(true);
     printer.println("Total: $" + total);
+
+    //total + propina
+    printer.bold(false);
+    let totalPropina = total * 1.10;
+    //quitamos decimales
+    totalPropina = totalPropina.toFixed(0);
+
+    printer.println("propina voluntaria (10%): $" + (total*0.10) );
+    printer.println("subtotal: $" + totalPropina);
+   
+
     printer.alignLeft();
     printer.bold(false);
     //fecha y hora actual
