@@ -111,19 +111,18 @@ async function añadirProductoPedido(req, res) {
 
 async function productoListo(req, res) {
 
-  const { idPedido, codProducto,idRegistro } = req.body;
-  console.log("IDREGISTRO:",idRegistro, "IDPEDIDO:",idPedido, "CODPRODUCTO:",codProducto)
+  const { idPedido, codProducto,idRegistro, Nombre } = req.body;
   const response = await con.udtProductoPedido("Listo", idPedido, codProducto, idRegistro); //actualizamos el estado de un producto en un pedido
-  console.log("Producto listo:", response);
   await actualizarEstadoPedido(idPedido);
 
 
   const filtro= "WHERE idPedido = ?"
   const values = [idPedido]
   const pedido = await con.traerPedidos(filtro, values); //obtenemos el pedido para despues extraer el usuario
+  console.log("Pedido:", pedido[0])
 
   
-  io.enviarNotificacion({codProducto:codProducto, mesa:pedido[0].idMesa, estado:"Listo"}, pedido[0].Usuario)
+  io.enviarNotificacion({codProducto:Nombre, mesa:pedido[0].Descripcion, estado:"Listo"}, pedido[0].Usuario)
 
   io.actualizarPedidos()
 
@@ -131,10 +130,9 @@ async function productoListo(req, res) {
 }
 
 async function productoCancelado(req, res) {
-  const { idPedido, codProducto,idRegistro } = req.body;
-  console.log("IDREGISTRO:",idRegistro, "IDPEDIDO:",idPedido, "CODPRODUCTO:",codProducto)
+  const { idPedido, codProducto, idRegistro, Nombre } = req.body;
+  console.log("req.body:", req.body);
   const response = await con.udtProductoPedido("Cancelado", idPedido, codProducto, idRegistro);
-  console.log("Producto cancelado:", response);
 
 
 
@@ -145,7 +143,7 @@ async function productoCancelado(req, res) {
   const pedido = await con.traerPedidos(filtro, values); //obtenemos el pedido para despues extraer el usuario
 
   
-  io.enviarNotificacion({codProducto:codProducto, mesa:pedido[0].idMesa, estado:"Cancelado"}, pedido[0].Usuario)
+  io.enviarNotificacion({codProducto:Nombre, mesa:pedido[0].Descripcion, estado:"Cancelado"}, pedido[0].Usuario)
 
   await actualizarEstadoPedido(idPedido);
   io.actualizarProductos()
