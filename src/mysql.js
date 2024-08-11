@@ -514,11 +514,12 @@ function insertarFactura(factura) {
     usuario,
     fecha,
     estado,
+    propina,
   } = factura;
 
   const sqlInsertarFactura = `INSERT INTO factura
-      (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado, Propina)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const values = [
     idPedido,
@@ -533,6 +534,7 @@ function insertarFactura(factura) {
     usuario,
     fecha,
     estado,
+    propina,
   ];
 
   return new Promise((resolve, reject) => {

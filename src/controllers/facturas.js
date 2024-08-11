@@ -2,13 +2,17 @@ const con = require("../mysql.js");
 const io = require("../routes/socketio");
 
 async function crearFactura(req, res) {
-  const { mesa, idMetodoPago, idUsuario, recibido, descuento } = req.body;
+  const { mesa, idMetodoPago, idUsuario, recibido, descuento, propina, total, subtotal } = req.body;
+  console.log("--------FACTURA--------");
+  console.log(req.body);
+  console.log("-----------------------");
+
   try {
     const idPedido = await obtenerPedidoPorMesa(mesa);
     await verificarEstadoPedido(idPedido);
-    const subtotal = await calcularSubtotal(idPedido);
-    const subtotalIva = subtotal * IVA_TASA;
-    const total = subtotal + subtotalIva - descuento;
+    const total = await calcularTotal(idPedido);
+    const subtotalIva = total * IVA_TASA;
+    const subtotal = total + subtotalIva - descuento + propina;
     const idCaja = await obtenerCajaActiva();
 
     const factura = {
@@ -21,16 +25,17 @@ async function crearFactura(req, res) {
       total,
       idMetodoPago,
       recibido,
-      cambio: recibido - total,
+      cambio: recibido - subtotal,
       usuario: idUsuario,
       fecha: new Date(),
       estado: "Pagado",
+      propina,
     };
 
     const resultado = await insertarFacturaYActualizarCaja(
       factura,
       idCaja,
-      total
+      subtotal
     );
     await con.actualizarEstadoMesa(mesa, "Disponible");
     await con.actualizarEstadoPedido("Facturado", idPedido);
@@ -97,7 +102,7 @@ async function verificarEstadoPedido(idPedido) {
   return estadoPedido;
 }
 
-async function calcularSubtotal(idPedido) {
+async function calcularTotal(idPedido) {
   const pedido = await con.getProductosPedido(idPedido);
   let subtotal = 0;
   for (const producto of pedido) {
