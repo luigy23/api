@@ -4,7 +4,7 @@ const path = require('path');
 //permitir impresión de caracteres especiales y acentos
 let printer = new ThermalPrinter({
   type: PrinterTypes.EPSON,
-  interface: '//localhost/XP-80C',
+  interface: '//localhost/XP-Cocina', //hay que compartir la impresora en red 
     characterSet: CharacterSet.PC858_EURO,
 });
 
@@ -199,8 +199,21 @@ async function imprimirCuentaMesero(pedido) {
 
 }
 
+async function imprimirPrueba() {
+    
+    printer.alignCenter();
+    printer.println("Hola mundo");
+    printer.cut();
+    printer.execute();
+    printer.clear();
+
+    return "ok";
+}
+
+
     module.exports = {
         imprimirTicketComanda,
-        imprimirCuentaMesero
+        imprimirCuentaMesero,
+        imprimirPrueba
 
     };
