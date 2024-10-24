@@ -82,20 +82,12 @@ async function registrar(req, res) {
 
         // Definir el esquema de validación para los datos
         const schema = z.object({
-            nombre: z.string().min(3).max(50)  
-            ,
-
-            apellido: z.string().min(3).max(50),
-            usuario: z.string().min(3).max(50),
-            contraseña: z.string().min(6).max(50),  // Aumentar el mínimo para una contraseña segura
-            fechaNacimiento: z.string().min(10).max(10),  // Asegurar el formato de fecha (dd/mm/aaaa)
+            nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(50, 'El nombre no puede exceder 50 caracteres'),
+            apellido: z.string().min(3, 'El apellido debe tener al menos 3 caracteres').max(50, 'El apellido no puede exceder 50 caracteres'),
+            usuario: z.string().min(3, 'El usuario debe tener al menos 3 caracteres').max(50, 'El usuario no puede exceder 50 caracteres'),
+            contraseña: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').max(50, 'La contraseña no puede exceder 50 caracteres'),  
+            fechaNacimiento: z.string().min(10, 'La fecha de nacimiento debe estar en formato dd/mm/aaaa').max(10, 'La fecha de nacimiento debe estar en formato dd/mm/aaaa'),
         });
-
-
-    
-
-
-
 
         // Validar los datos recibidos
         const datosValidados = schema.parse({
@@ -130,14 +122,31 @@ async function registrar(req, res) {
         });
 
         // Responder con un mensaje de éxito
+        console.log('Usuario registrado exitosamente');
         return res.status(201).json({
             message: 'Usuario registrado exitosamente',
         });
+
+
     } catch (error) {
-        // Manejar errores y proporcionar respuestas adecuadas
         console.error('Error al registrar el usuario:', error);
+
+        // Si el error es de validación, devolver mensajes legibles
+        if (error instanceof z.ZodError) {
+            const errores = error.errors.map(err => ({
+                campo: err.path[0],
+                mensaje: err.message
+            }));
+            return res.status(400).json({
+                message: 'Error de validación',
+                errores: errores
+            });
+        }
+
+        // Si es un error diferente (ej. de la base de datos o bcrypt)
         return res.status(500).json({
             message: 'Ocurrió un error al procesar la solicitud',
+            error: error.message
         });
     }
 }

@@ -1,150 +1,155 @@
 const con = require("../mysql.js");
-const  io  = require("../routes/socketio");
+const io = require("../routes/socketio");
 const fs = require('fs').promises;
 const path = require('path');
 
+// Configuración centralizada
+const CONFIG = {
+  DIRECTORIO_IMAGENES: 'public/imagenes/',
+  IMAGEN_DEFAULT: 'public/default.jpg',
+  EXTENSIONES_PERMITIDAS: {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp'
+  }
+};
 
-async function getProductos(req, res){
+// Funciones auxiliares
+const handleError = (res, error) => {
+  console.error('Error:', error);
+  res.status(500).json({ error: error.message || 'Error interno del servidor' });
+};
 
-    const Productos = await con.getProductos()
-    res.json(Productos)
-}
-
-async  function udtProducto (req, res) {
-    const producto =JSON.parse(req.body.producto)
+const validarProducto = (producto) => {
+  const camposRequeridos = ['codigo', 'nombre', 'descripcion', 'categoria', 'precio', 'stock'];
+  const camposFaltantes = camposRequeridos.filter(campo => !producto[campo]);
   
-    if (req.file){
-      const imagenPath = req.file.path
-      const nombre = producto.codigo
-      const nuevoNombre = 'public/imagenes/'+nombre+'.jpg'
-      const productoConImagen = {...producto, imagen:`/productos/imagenes/${nombre}`}
-      await fs.rename(imagenPath,nuevoNombre,(err) => err && console.error(err))
-      await con.udtProducto(productoConImagen)
-      res.json(productoConImagen)
-      
-    }else{
-      res.json("Envia una imagen")
-      const  response  =await con.udtProducto(producto)
-      console.log("producto actualizado", response)
-    }
-    io.actualizarProductos()
+  if (camposFaltantes.length > 0) {
+    throw new Error(`Faltan los siguientes campos: ${camposFaltantes.join(', ')}`);
+  }
+  
+  return {
+    ...producto,
+    estado: producto.estado || 'Disponible',
+    precio: Number(producto.precio),
+    stock: Number(producto.stock)
+  };
+};
+
+// Funciones principales manteniendo los mismos nombres
+async function getProductos(req, res) {
+  try {
+    const productos = await con.getProductos();
+    res.json(productos);
+  } catch (error) {
+    handleError(res, error);
+  }
 }
 
+async function udtProducto(req, res) {
+  try {
+    let producto = typeof req.body.producto === 'string' 
+      ? JSON.parse(req.body.producto)
+      : req.body.producto;
 
+    if (req.file) {
+      const imagenPath = req.file.path;
+      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg';
+      const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
+      
+      // Asegurar que el directorio existe
+      await fs.mkdir(CONFIG.DIRECTORIO_IMAGENES, { recursive: true });
 
+      try {
+        await fs.rename(imagenPath, nuevoNombre);
+      } catch (err) {
+        await fs.copyFile(imagenPath, nuevoNombre);
+        await fs.unlink(imagenPath);
+      }
 
-// Función principal para crear el producto
+      producto = {
+        ...producto,
+        imagen: `/productos/imagenes/${producto.codigo}${extension}`
+      };
+
+      await con.udtProducto(producto);
+      res.json(producto);
+    } else {
+      const response = await con.udtProducto(producto);
+      res.json(response);
+    }
+
+    io.actualizarProductos();
+  } catch (error) {
+    handleError(res, error);
+  }
+}
+
 async function crearProducto(req, res) {
   try {
-    const producto = JSON.parse(req.body.producto);
-    console.log("producto", producto);
+    let producto = typeof req.body.producto === 'string' 
+      ? JSON.parse(req.body.producto)
+      : req.body.producto;
 
-    const { valido, producto: productoPreparado } = prepararProducto(producto);
+    // Validar y preparar el producto
+    producto = validarProducto(producto);
 
-    if (!valido) {
-      return res.status(400).json({ error: "Faltan campos por completar" });
+    // Manejar la imagen
+    if (req.file) {
+      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg';
+      const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
+      
+      await fs.mkdir(CONFIG.DIRECTORIO_IMAGENES, { recursive: true });
+
+      try {
+        await fs.rename(req.file.path, nuevoNombre);
+      } catch (err) {
+        await fs.copyFile(req.file.path, nuevoNombre);
+        await fs.unlink(req.file.path);
+      }
+
+      producto.imagen = `/productos/imagenes/${producto.codigo}${extension}`;
+    } else {
+      // Copiar imagen por defecto si no se proporciona una
+      const extension = '.jpg';
+      const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
+      await fs.copyFile(CONFIG.IMAGEN_DEFAULT, nuevoNombre);
+      producto.imagen = `/productos/imagenes/${producto.codigo}${extension}`;
     }
 
-
-
-    const productoConImagen = await manejarImagenProducto(req, productoPreparado);
-    const productoCreado = await insertarProductoEnDB(productoConImagen);
-
-    res.json(productoCreado);
-    io.actualizarProductos(); // Asegúrate de que esta función se maneje correctamente
+    // Insertar en la base de datos
+    await con.crearProducto(producto);
+    res.json(producto);
+    io.actualizarProductos();
   } catch (error) {
-    console.error('Error al crear producto:', error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    handleError(res, error);
   }
 }
 
-
-async function delProducto (req, res) {
-  const {id} = req.params
-
-  const responseDel = await con.delProducto(id)
-  console.log("producto eliminado", responseDel)
-  res.json(responseDel)
-  io.actualizarProductos()
-}
-
-
-
-//funciones de servicio
-// Valida los campos requeridos del producto
-// Prepara el producto, estableciendo valores predeterminados si son necesarios
-function prepararProducto(producto) {
-  // Establece el estado a 'Disponible' si no se ha proporcionado uno
-  if (!producto.estado) {
-    producto.estado = 'Disponible';
-  }
-  
-  // Verifica que los campos requeridos estén presentes
-  const { codigo, nombre, descripcion, categoria, precio, stock } = producto;
-  if (!codigo || !nombre || !descripcion || !categoria || !precio || !stock) {
-    return { valido: false };
-  }
-
-  return { valido: true, producto };
-}
-
-
-// Maneja el archivo de imagen del producto y actualiza la información del producto
-async function manejarImagenProducto(req, producto) {
-  let imagenPath = req.file ? req.file.path : null;
-  const directorioDestino = 'public/imagenes/';
-  
-  // Determinar la extensión correcta
-  let extension = '.jpg'; // Extensión predeterminada
-  if (req.file) {
-    const mimeType = req.file.mimetype;
-    if (mimeType === 'image/jpeg') extension = '.jpg';
-    else if (mimeType === 'image/png') extension = '.png';
-    else if (mimeType === 'image/webp') extension = '.webp';
-    else {
-      // Si no es ninguno de los tipos soportados, lanzar un error
-      throw new Error('Tipo de archivo no soportado');
+async function delProducto(req, res) {
+  try {
+    const { id } = req.params;
+    
+    // Intentar obtener el producto antes de eliminarlo para conseguir la ruta de la imagen
+    const producto = await con.getProductoById(id);
+    
+    if (producto && producto.imagen) {
+      // Intentar eliminar la imagen si existe
+      const rutaImagen = path.join('public', producto.imagen);
+      await fs.unlink(rutaImagen).catch(err => console.error('Error al eliminar imagen:', err));
     }
+
+    const response = await con.delProducto(id);
+    res.json(response);
+    io.actualizarProductos();
+  } catch (error) {
+    handleError(res, error);
   }
-
-  const nuevoNombre = path.join(directorioDestino, `${producto.codigo}${extension}`);
-
-  // Asegurarse de que el directorio existe
-  await fs.mkdir(directorioDestino, { recursive: true });
-
-  if (imagenPath) {
-    // Mover el archivo al nuevo destino
-    try {
-      await fs.rename(imagenPath, nuevoNombre);
-    } catch (err) {
-      // Si falla el rename por razones como estar en diferentes discos, intenta copiar y luego borrar
-      await fs.copyFile(imagenPath, nuevoNombre);
-      await fs.unlink(imagenPath);
-    }
-  } else {
-    // Si no se proporciona una imagen, usar una imagen por defecto
-    const imagenPorDefecto = 'public/default.jpg'; // Ruta a la imagen por defecto
-    await fs.copyFile(imagenPorDefecto, nuevoNombre);
-  }
-  
-  return { ...producto, imagen: `/productos/imagenes/${producto.codigo}${extension}` };
 }
-
-// Inserta el producto en la base de datos
-async function insertarProductoEnDB(producto) {
-  const response = await con.crearProducto(producto);
-  console.log("producto creado", response);
-  return producto;
-}
-
-
-
 
 module.exports = {
-    getProductos,
-    udtProducto,
-    crearProducto,
-    delProducto,
-    
-    
-}
+  getProductos,
+  udtProducto,
+  crearProducto,
+  delProducto
+};
