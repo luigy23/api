@@ -2,13 +2,18 @@ const con = require("../mysql.js");
 const io = require("../routes/socketio");
 
 async function crearFactura(req, res) {
-  const { mesa, idMetodoPago, idUsuario, recibido, descuento, propina, total, subtotal } = req.body;
+  const { mesa, idMetodoPago,  recibido, descuento, propina, total, subtotal } = req.body;
   console.log("--------FACTURA--------");
   console.log(req.body);
   console.log("-----------------------");
 
   try {
     const idPedido = await obtenerPedidoPorMesa(mesa);
+
+    const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
+    idUsuario = pedido[0].Usuario;
+
+
     await verificarEstadoPedido(idPedido);
     const total = await calcularTotal(idPedido);
     const subtotalIva = total * IVA_TASA;

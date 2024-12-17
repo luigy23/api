@@ -66,6 +66,7 @@ router.delete('/categorias/:id',verficarToken, categorias.delCategoria)
 router.post('/pedidos',verficarToken, pedidos.nuevoPedido)
 router.get('/pedidos',verficarToken, pedidos.traerPedidos)
 router.put('/pedidos',verficarToken, pedidos.añadirProductoPedido)
+router.get('/pedidos/mesero/:id', pedidos.obtenerMeseroDePedido)
 
 
 //productos

@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const mysql = require("mysql2");
 const { imprimirTicketComanda } = require("./services/ticket");
+const { get } = require("./app");
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
@@ -301,7 +302,11 @@ async function udtCambiosPedido(idPedido, cambio) {
 //METODOS PRODUCTOS
 
 function getProductos() {
-  const sqlTraerProductos = `SELECT * FROM productos ORDER BY CASE WHEN Stock = 0 THEN 1 ELSE 0 END`;
+  const sqlTraerProductos = `SELECT * 
+FROM productos 
+ORDER BY 
+  CASE WHEN Stock = 0 THEN 1 ELSE 0 END, 
+  Nombre ASC;`;
   return new Promise((resolve, reject) => {
     connection.query(sqlTraerProductos, function (err, resultados) {
       if (err) reject(err);
@@ -312,7 +317,20 @@ function getProductos() {
   });
 }
 
-function udtProducto(producto) {
+function getProductoById(codigo) {
+  const sqlTraerProducto = `SELECT * FROM productos WHERE codProducto = ?`;
+  return new Promise((resolve, reject) => {
+    connection.query(sqlTraerProducto, [codigo], function (err, resultados) {
+      if (err) reject(err);
+      else {
+        resolve(resultados[0]);
+      }
+    });
+  });
+}
+
+
+async function udtProducto(producto) {
   const {
     nombre,
     descripcion,
@@ -323,25 +341,49 @@ function udtProducto(producto) {
     stock,
     codigo,
   } = producto;
-  const sqludtProducto = `UPDATE productos SET 
-  Nombre = '${nombre}', 
-  Descripcion = '${descripcion}',
-  idCategoria = ${categoria},
-  Precio = ${precio},
-  Estado = '${estado}',
-  Imagen = '${imagen}',
-  Stock = ${stock}
-  WHERE productos.codProducto = '${codigo}'`;
 
-  return new Promise((resolve, reject) => {
-    connection.query(sqludtProducto, function (err, resultados) {
-      if (err) reject(err);
-      else {
-        resolve(resultados);
-      }
+  // Verificar que los campos obligatorios no sean nulos
+  if (!codigo || !nombre || !categoria || !precio) {
+    throw new Error('Faltan campos obligatorios para actualizar el producto');
+  }
+
+  // Preparar consulta parametrizada
+  const sqludtProducto = `
+    UPDATE productos SET 
+      Nombre = ?, 
+      Descripcion = ?,
+      idCategoria = ?,
+      Precio = ?,
+      Estado = ?,
+      Imagen = ?,
+      Stock = ?
+    WHERE codProducto = ?`;
+
+  const valores = [
+    nombre,
+    descripcion || null,
+    categoria,
+    precio,
+    estado || 'activo', // Valor por defecto
+    imagen || null,
+    stock || 10, // Valor por defecto
+    codigo,
+  ];
+
+  // Ejecutar la consulta
+  try {
+    const resultados = await new Promise((resolve, reject) => {
+      connection.query(sqludtProducto, valores, (err, resultados) => {
+        if (err) reject(err);
+        else resolve(resultados);
+      });
     });
-  });
+    return resultados;
+  } catch (err) {
+    throw new Error(`Error al actualizar el producto: ${err.message}`);
+  }
 }
+
 
 async function restarStockProducto(codigoProducto, cantidad) {
   const stockActual = await obteneStockProducto(codigoProducto);
@@ -682,13 +724,18 @@ function insertarMovimiento(datosMovimiento) {
 }
 function getMovimientos(idCaja) {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, mesa.Descripcion as Mesa, pedido.Usuario as Usuario
-  FROM movimientos
-  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
-  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
-  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
-  WHERE movimientos.idCaja = ?
-  ORDER BY FechaHora DESC;`;
+SELECT movimientos.*, 
+       mesa.Descripcion AS Mesa, 
+       pedido.Usuario AS Usuario, 
+       factura.Subtotal AS Subtotal, 
+       factura.Propina AS Propina
+FROM movimientos
+LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+WHERE movimientos.idCaja = ?
+ORDER BY FechaHora DESC;
+`;
   const values = [idCaja];
   return new Promise((resolve, reject) => {
     connection.query(
@@ -703,12 +750,17 @@ function getMovimientos(idCaja) {
 }
 function getTodosMovimientos() {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
-  FROM movimientos
-  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
-  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
-  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
-  ORDER BY FechaHora DESC;`;
+  SELECT movimientos.*, 
+       mesa.Descripcion AS Mesa, 
+       factura.Usuario AS Usuario, 
+       factura.Subtotal AS Subtotal, 
+       factura.Propina AS Propina
+FROM movimientos
+LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+ORDER BY FechaHora DESC;
+`;
   return new Promise((resolve, reject) => {
     connection.query(sqlObtenerMovimientos, function (error, resultado) {
       if (error) reject(error);
@@ -718,15 +770,19 @@ function getTodosMovimientos() {
 }
 function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, mesa.Descripcion as Mesa, factura.Usuario as Usuario
-  FROM movimientos
-  LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
-  LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
-  LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
-  WHERE movimientos.FechaHora BETWEEN ? AND ?
+  SELECT movimientos.*, 
+       mesa.Descripcion AS Mesa, 
+       factura.Usuario AS Usuario, 
+       factura.Subtotal AS Subtotal, 
+       factura.Propina AS Propina
+FROM movimientos
+LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
+LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
+LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+WHERE DATE(movimientos.FechaHora) BETWEEN ? AND ?
   AND movimientos.Tipo = ?
-  ORDER BY FechaHora DESC;`;
-  const values = [fechaInicio, fechaFin+" 23:59", tipoMovimiento];
+ORDER BY movimientos.FechaHora DESC;`;
+  const values = [fechaInicio, fechaFin, tipoMovimiento];
   return new Promise((resolve, reject) => {
     connection.query(
       sqlObtenerMovimientos,
@@ -741,10 +797,10 @@ function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
 //Reportes de ventas
 
 function obtenerVentas(fechas) {
+  console.log("Obtener ventas", fechas);
   console.log(fechas);
-  const sqlObtenerVentas = `
-  SELECT COUNT(*) AS CantidadPedidos, SUM(CASE WHEN Estado = 'facturado' THEN Total ELSE 0 END) AS TotalFacturado FROM pedido WHERE Fecha BETWEEN ? AND ?;`;
-  const values = [fechas.fechaInicio, fechas.fechaFin + " 23:59"];
+  const sqlObtenerVentas = `  SELECT COUNT(*) AS CantidadPedidos, SUM(CASE WHEN Estado = 'Pagado' THEN Subtotal ELSE 0 END) AS TotalFacturado FROM factura   WHERE DATE(Fecha) BETWEEN ? AND ?;`;
+  const values = [fechas.fechaInicio, fechas.fechaFin ];
   return new Promise((resolve, reject) => {
     connection.query(sqlObtenerVentas, values, function (error, resultado) {
       if (error) reject(error);
@@ -756,7 +812,7 @@ function obtenerVentas(fechas) {
 
 function obtenerVentasMeseros(fechas) {
   const sqlObtenerVentasMeseros = `SELECT p.Usuario AS Mesero, COUNT(DISTINCT p.idPedido) AS CantidadPedidos, SUM(p.Total) AS TotalVentas, SUM(f.Propina) AS TotalPropinas, SUM(p.Total) + SUM(f.Propina) AS TotalVentasConPropinas FROM pedido p LEFT JOIN factura f ON p.idPedido = f.idPedido WHERE p.Estado = 'Facturado' AND f.Estado = 'Pagado' 
-  and p.Fecha BETWEEN ? AND ?
+  and f.Fecha BETWEEN ? AND ?
   GROUP BY p.Usuario ORDER BY TotalVentasConPropinas DESC; `;
   const values = [fechas.fechaInicio, fechas.fechaFin+" 23:59"];
   return new Promise((resolve, reject) => {
@@ -1016,6 +1072,7 @@ module.exports = {
   udtCambiosPedido,
 
   getProductosPedido,
+  getProductoById,
   udtProductoPedido,
   getEstadoPed_Productos,
   actualizarEstadoPedido,

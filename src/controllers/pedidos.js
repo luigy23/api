@@ -111,6 +111,8 @@ async function añadirProductoPedido(req, res) {
 
 async function productoListo(req, res) {
 
+  console.log("PEDIDO LISTO req.body:", req.body);
+
   const { idPedido, codProducto,idRegistro, Nombre } = req.body;
   const response = await con.udtProductoPedido("Listo", idPedido, codProducto, idRegistro); //actualizamos el estado de un producto en un pedido
   await actualizarEstadoPedido(idPedido);
@@ -178,6 +180,17 @@ async function actualizarEstadoPedido(idPedido) {
   
 }
 //
+async function obtenerMeseroDePedido(req, res) {
+  const idPedido = req.params.id;
+  console.log("IDPEDIDO:",idPedido)
+  const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
+  const mesero = pedido[0].Usuario;
+
+  res.json(mesero);
+}
+
+
+
 module.exports = {
   traerPedidos,
   productoListo,
@@ -185,4 +198,5 @@ module.exports = {
   actualizarEstadoPedido,
   nuevoPedido,
   añadirProductoPedido,
+  obtenerMeseroDePedido
 };

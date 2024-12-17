@@ -6,7 +6,7 @@ const path = require('path');
 // Configuración centralizada
 const CONFIG = {
   DIRECTORIO_IMAGENES: 'public/imagenes/',
-  IMAGEN_DEFAULT: 'public/default.jpg',
+  IMAGEN_DEFAULT: null,
   EXTENSIONES_PERMITIDAS: {
     'image/jpeg': '.jpg',
     'image/png': '.png',
@@ -54,7 +54,7 @@ async function udtProducto(req, res) {
 
     if (req.file) {
       const imagenPath = req.file.path;
-      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg';
+      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg' || '.png' || '.webp';
       const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
       
       // Asegurar que el directorio existe
@@ -75,6 +75,11 @@ async function udtProducto(req, res) {
       await con.udtProducto(producto);
       res.json(producto);
     } else {
+    
+      if (producto.imagen === "/default.jpg") {
+      //eliminamos el atributo imagen
+       producto.imagen = null;}
+      
       const response = await con.udtProducto(producto);
       res.json(response);
     }
@@ -96,7 +101,7 @@ async function crearProducto(req, res) {
 
     // Manejar la imagen
     if (req.file) {
-      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg';
+      const extension = CONFIG.EXTENSIONES_PERMITIDAS[req.file.mimetype] || '.jpg' || '.png' || '.webp';
       const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
       
       await fs.mkdir(CONFIG.DIRECTORIO_IMAGENES, { recursive: true });
@@ -110,11 +115,8 @@ async function crearProducto(req, res) {
 
       producto.imagen = `/productos/imagenes/${producto.codigo}${extension}`;
     } else {
-      // Copiar imagen por defecto si no se proporciona una
-      const extension = '.jpg';
-      const nuevoNombre = path.join(CONFIG.DIRECTORIO_IMAGENES, `${producto.codigo}${extension}`);
-      await fs.copyFile(CONFIG.IMAGEN_DEFAULT, nuevoNombre);
-      producto.imagen = `/productos/imagenes/${producto.codigo}${extension}`;
+      // Dejar en null
+      producto.imagen = null;
     }
 
     // Insertar en la base de datos

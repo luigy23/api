@@ -40,8 +40,22 @@ app.use(require('./routes/index'))
 app.use(errores)
 app.get('/productos/imagenes/:id', (req, res) => {
   const id = req.params.id;
-  // Asegura que el id tenga la extensión .jpg solo una vez.
-  const imagenNombre = id.endsWith('.jpg') ? id : `${id}.jpg`;
+  const allowedExtensions = ['.jpg', '.png', '.webp'];
+  let imagenNombre;
+
+  // Verifica si el id tiene una de las extensiones permitidas
+  for (const ext of allowedExtensions) {
+    if (id.endsWith(ext)) {
+      imagenNombre = id;
+      break;
+    }
+  }
+
+  // Si no tiene una extensión permitida, agrega .jpg por defecto
+  if (!imagenNombre) {
+    imagenNombre = `${id}.jpg`;
+  }
+
   const ruta = path.join(__dirname, "../public/imagenes/", imagenNombre);
   
   // Enviar archivo o manejar error si el archivo no existe

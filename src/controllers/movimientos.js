@@ -43,28 +43,40 @@ async function getTodosMovimientos(req, res) {
 async function getMovimientosFiltrados(req, res) {
     //obtener los filtros
     const { fechaInicio, fechaFin } = req.body
+
+    const tipoMovimiento = "Ingreso"
+
+        // validar que los filtros no esten vacios
+        if (fechaInicio == "" || fechaFin == "" || tipoMovimiento == "") {
+            res.status(500).json({
+                message: "Faltan datos"
+            })
+            return
+        }
+
     //mostramos en consoloa el body
     console.log(req.body)
 
     //convertimos las fechas de string a date y le sumamos un dia a la fecha fin
     const fechaInicioDate = new Date(fechaInicio)
     const fechaFinDate = new Date(fechaFin)
-    fechaFinDate.setDate(fechaFinDate.getDate() + 1)
+
+
+      // Ajustar a la zona horaria local y convertir a formato YYYY-MM-DD
+      
+        const fechaI = fechaInicioDate.toLocaleDateString('en-CA')
+         const fechaF = fechaFinDate.toLocaleDateString('en-CA')
+      
+
+
     
-    const tipoMovimiento = "Ingreso"
     
 
 
-    // validar que los filtros no esten vacios
-    if (fechaInicio == "" || fechaFin == "" || tipoMovimiento == "") {
-        res.status(500).json({
-            message: "Faltan datos"
-        })
-        return
-    }
+
     // hacer la consulta
     try {
-        const movimientos = await con.getMovimientosFiltrados(fechaInicioDate, fechaFinDate, tipoMovimiento)
+        const movimientos = await con.getMovimientosFiltrados(fechaI, fechaF, tipoMovimiento)
         res.status(200).json(movimientos)
     }
     catch (error) {

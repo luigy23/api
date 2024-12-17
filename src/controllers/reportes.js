@@ -3,9 +3,20 @@ const  io  = require("../routes/socketio.js");
 
 
 async function obtenerVentas(req, res) {
-
-    const fechas = req.body 
     try {
+        const {fechaInicio, fechaFin} = req.body 
+
+        // Convertir a objetos Date
+        const fechaInicioDate = new Date(fechaInicio);
+        const fechaFinDate = new Date(fechaFin);
+
+        // Ajustar a la zona horaria local y convertir a formato YYYY-MM-DD
+        const fechas = {
+            fechaInicio: fechaInicioDate.toLocaleDateString('en-CA'),
+            fechaFin: fechaFinDate.toLocaleDateString('en-CA')
+        };
+        
+   
         const totalPedidos = await con.obtenerVentas(fechas);
 
             console.log(totalPedidos)
@@ -22,7 +33,21 @@ async function obtenerVentas(req, res) {
 
 async function obtenerVentasMesero(req, res) {
     
-        const fechas = req.body 
+        const {fechaInicio, fechaFin} = req.body 
+  
+
+        // Convertir a objetos Date
+        const fechaInicioDate = new Date(fechaInicio);
+        const fechaFinDate = new Date(fechaFin);
+    
+        // Ajustar a la zona horaria local y convertir a formato YYYY-MM-DD
+        const fechas = {
+            fechaInicio: fechaInicioDate.toLocaleDateString('en-CA'),
+            fechaFin: fechaFinDate.toLocaleDateString('en-CA')
+        };
+    
+        console.log(fechas);
+
         try {
             const totalPedidos = await con.obtenerVentasMeseros(fechas);
     

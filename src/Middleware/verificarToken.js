@@ -1,51 +1,90 @@
 const jwt = require("jsonwebtoken")
 con = require("../mysql.js")
 //middleware para verificar el token
+
+
+
+
 const verificarToken = async (req, res, next) => {
-    // permitimos cors
-    res.header("Access-Control-Allow-Origin", "*")
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
-
-
-
-
-    // sacamos el token de la cabecera Authorization (Bearer <token>)
-    const token = req.headers.authorization.split(" ")[1]
-   // console.log("este es el token: "+token)
-    if (!token) {
-        res.status(500).json({
-            message: "No hay token para verificar"
-        })
-        return
-    }
     try {
-        const infoToken = jwt.verify(token, "hola") 
-        //verificamos que el usuario este activo
-        const usuario = infoToken.usuario
-        const result = await con.verificarEstadoUsuario(usuario)
+        // Set CORS headers
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
 
-        if (result[0].Estado != "Activo") {
-            res.status(500).json({
-                message: "Usuario no activo"
-                
-            })
-            return
+        // Check if Authorization header exists
+        if (!req.headers.authorization) {
+            return res.status(401).json({
+                success: false,
+                message: "No se proporcionó token de autorización"
+            });
         }
 
+        // Extract token
+        const authHeader = req.headers.authorization;
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
 
+        // Validate token exists
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "Token no proporcionado"
+            });
+        }
 
+        // Verify token
+        const infoToken = jwt.verify(token, "hola");
+        
+        // Validate token payload
+        if (!infoToken || !infoToken.usuario) {
+            return res.status(401).json({
+                success: false,
+                message: "Token inválido o mal formado"
+            });
+        }
 
+        // Verify user status
+        const result = await con.verificarEstadoUsuario(infoToken.usuario);
+        
+        if (!result || !result.length) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no encontrado"
+            });
+        }
 
-//        console.log(infoToken)
+        if (result[0].Estado !== "Activo") {
+            return res.status(403).json({
+                success: false,
+                message: "Usuario no activo"
+            });
+        }
+
+        // Add user info to request for downstream middleware/routes
+        req.user = infoToken;
+        next();
+
     } catch (error) {
-        res.status(500).json({
-            error: "Token invalido",
-            result: result[0]
-        })
-        return
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: "Token inválido"
+            });
+        }
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: "Token expirado"
+            });
+        }
+        
+        // Log server errors but don't expose details to client
+        console.error('Error en verificación de token:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Error interno del servidor"
+        });
     }
-    next()
-}
+};
 
 //exportamos para poder usarlo en otros archivos
 module.exports = verificarToken;
