@@ -4,13 +4,19 @@ const path = require('path')
 // permitir impresión de caracteres especiales y acentos
 const printer = new ThermalPrinter({
   type: PrinterTypes.EPSON,
-  interface: '//localhost/BL_POS', // hay que compartir la impresora en red //localhost/XP-Cocina
+  interface: '//localhost/POS-COCINA', // hay que compartir la impresora en red //localhost/XP-Cocina
   characterSet: CharacterSet.PC858_EURO
 })
 
 const printerBebidas = new ThermalPrinter({
   type: PrinterTypes.EPSON,
-  interface: 'tcp://192.168.20.100', // hay que compartir la impresora en red
+  interface: '//localhost/POS-BEBIDAS', // hay que compartir la impresora en red
+  characterSet: CharacterSet.PC858_EURO
+})
+
+const printerCaja = new ThermalPrinter({
+  type: PrinterTypes.EPSON,
+  interface: '//localhost/XP-80Caja', // hay que compartir la impresora en red //localhost/XP-Cocina
   characterSet: CharacterSet.PC858_EURO
 })
 
@@ -84,42 +90,42 @@ async function imprimirCuentaMesero (pedido) {
 
   const nombreMesero = Mesero.nombre ? Mesero.nombre : Mesero.user
 
-  printer.alignCenter()
+  printerCaja.alignCenter()
 
-  await printer.printImage(logo)
-  printer.newLine()
-  printer.bold(true)
-  printer.println('Pedido # ' + idPedido)
-  printer.bold(false)
-  printer.drawLine()
-  printer.newLine()
-  printer.print('Mesa: ' + mesa + ' | ')
-  printer.println('Mesero: ' + nombreMesero)
-  printer.newLine()
-  printer.drawLine()
+  await printerCaja.printImage(logo)
+  printerCaja.newLine()
+  printerCaja.bold(true)
+  printerCaja.println('Pedido # ' + idPedido)
+  printerCaja.bold(false)
+  printerCaja.drawLine()
+  printerCaja.newLine()
+  printerCaja.print('Mesa: ' + mesa + ' | ')
+  printerCaja.println('Mesero: ' + nombreMesero)
+  printerCaja.newLine()
+  printerCaja.drawLine()
 
   // tabla con productos y precios
-  printer.tableCustom([ // Prints table with custom settings (text, align, width, cols, bold)
+  printerCaja.tableCustom([ // Prints table with custom settings (text, align, width, cols, bold)
     { text: 'Descripcion', align: 'LEFT', width: 0.5, bold: true },
     { text: 'Cant', align: 'CENTER', width: 0.25, bold: true },
     { text: 'Precio', align: 'RIGHT', cols: 8, bold: true }
   ])
-  printer.drawLine()
-  printer.newLine()
+  printerCaja.drawLine()
+  printerCaja.newLine()
   productos.forEach(producto => {
     if (producto.Estado === 'Cancelado') return
 
-    printer.tableCustom([
+    printerCaja.tableCustom([
       { text: '*' + producto.Nombre, align: 'LEFT', width: 0.5 },
       { text: producto.Cantidad, align: 'CENTER', width: 0.25 },
       { text: '$' + producto.Precio, align: 'RIGHT', cols: 8 }
     ])
-    printer.drawLine()
+    printerCaja.drawLine()
   })
 
   // total
 
-  printer.alignRight()
+  printerCaja.alignRight()
   // calcular total
   let total = 0
   productos.forEach(producto => {
@@ -129,33 +135,33 @@ async function imprimirCuentaMesero (pedido) {
       total += 0
     }
   })
-  printer.bold(true)
-  printer.println('Total: $' + total)
+  printerCaja.bold(true)
+  printerCaja.println('Total: $' + total)
 
   // total + propina
-  printer.bold(false)
+  printerCaja.bold(false)
   let totalPropina = total * 1.10
   // quitamos decimales
   totalPropina = totalPropina.toFixed(0)
 
-  printer.println('propina voluntaria (10%): $' + (total * 0.10))
-  printer.println('subtotal: $' + totalPropina)
+  printerCaja.println('propina voluntaria (10%): $' + (total * 0.10))
+  printerCaja.println('subtotal: $' + totalPropina)
 
-  printer.alignLeft()
-  printer.bold(false)
+  printerCaja.alignLeft()
+  printerCaja.bold(false)
   // fecha y hora actual
   const fecha = new Date()
-  printer.println('Fecha: ' + fecha.toLocaleDateString())
-  printer.println('Hora: ' + fecha.toLocaleTimeString())
-  printer.newLine()
+  printerCaja.println('Fecha: ' + fecha.toLocaleDateString())
+  printerCaja.println('Hora: ' + fecha.toLocaleTimeString())
+  printerCaja.newLine()
   // comentario esta cuenta no cuenta como comprobante de pago
-  printer.println('Este ticket no es valido como comprobante de pago')
+  printerCaja.println('Este ticket no es valido como factura electronica')
 
-  printer.cut()
-  printer.execute()
+  printerCaja.cut()
+  printerCaja.execute()
 
   // limpiar la impresora
-  printer.clear()
+  printerCaja.clear()
 }
 
 async function imprimirPrueba () {
