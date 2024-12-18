@@ -96,7 +96,7 @@ async function crearProducto(req, res) {
       ? JSON.parse(req.body.producto)
       : req.body.producto;
 
-    // Validar y preparar el producto
+    // Validar y preparar el producto 
     producto = validarProducto(producto);
 
     // Manejar la imagen
