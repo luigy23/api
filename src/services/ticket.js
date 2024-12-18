@@ -1,6 +1,10 @@
 const { ThermalPrinter, PrinterTypes, CharacterSet } = require('node-thermal-printer') // Import
 const path = require('path')
 
+try {
+  
+
+
 // permitir impresión de caracteres especiales y acentos
 const printer = new ThermalPrinter({
   type: PrinterTypes.EPSON,
@@ -179,4 +183,7 @@ module.exports = {
   imprimirCuentaMesero,
   imprimirPrueba
 
+}
+} catch (error) {
+  console.error(error)
 }
