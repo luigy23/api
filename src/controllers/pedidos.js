@@ -58,7 +58,9 @@ async function nuevoPedido(req, res) {
       io.actualizarPedidos();
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
       io.actualizarMesas();
+      if (pedido.Imprimir){
       await imprimirTicketComanda(pedido);
+    }
       res.json({ mensaje: 'Pedido Enviado' });
     } catch (error) {
       console.log(error);
@@ -70,7 +72,7 @@ async function nuevoPedido(req, res) {
   }
 }
 async function añadirProductoPedido(req, res) {
-  const { idMesa, productos } = req.body;
+  const { idMesa, productos, Imprimir } = req.body;
   const idPedido = await con.obtenerElPedidoDeUnaMesa(idMesa);
   let cambio = await con.getCambiosPedido(idPedido);
   cambio = cambio[0].Cambios+1;
@@ -100,7 +102,8 @@ async function añadirProductoPedido(req, res) {
          Productos: productos,
        };
 
-      imprimirTicketComanda(impresion);
+    if (Imprimir){
+      imprimirTicketComanda(impresion);}
     
 
   } catch (error) {
