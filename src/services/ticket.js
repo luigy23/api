@@ -39,6 +39,11 @@ async function imprimirTicketComanda (pedido) {
   console.log(pedido)
   console.log('---------------------------------------')
 
+  //categoria 30 no se imprime
+
+
+
+
   await printer.printImage(logo)
 
   printer.alignCenter()
@@ -63,7 +68,8 @@ async function imprimirTicketComanda (pedido) {
   }
 
   const bebidas = Productos.filter(producto => producto.idCategoria === 4)
-  const otrosProductos = Productos.filter(producto => producto.idCategoria !== 4)
+  const otrosProductos = Productos.filter(producto => producto.idCategoria !== 4 && producto.idCategoria !== 30)
+
 
   if (bebidas.length > 0) {
     await printerBebidas.printImage(logo)
