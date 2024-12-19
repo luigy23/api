@@ -81,6 +81,8 @@ async function imprimirTicketComanda (pedido) {
     printerBebidas.drawLine()
     printerBebidas.cut()
     printerBebidas.execute()
+    printerBebidas.beep()
+
     printerBebidas.clear()
   }
 
@@ -89,7 +91,7 @@ async function imprimirTicketComanda (pedido) {
   printer.drawLine()
   printer.cut()
   printer.execute()
-
+  printer.beep()
   // Limpiar la impresora
   printer.clear()
 }
@@ -177,8 +179,8 @@ async function imprimirPrueba () {
 
   printerCaja.alignCenter()
   printerCaja.newLine()
-  printerCaja.print(`Mesa: ${MesaDescripcion}  |`)
-  printerCaja.println(`Mesero: ${quitarAcentos(Mesero)}`)
+  printerCaja.bold(true)
+  printerCaja.println('Ticket de prueba')
   printerCaja.drawLine()
 
   // imprimir hora y fecha
@@ -186,7 +188,9 @@ async function imprimirPrueba () {
   printerCaja.println(fecha.toLocaleDateString())
   printerCaja.drawLine()
   printerCaja.cut()
-  printerCaja.execute()
+  printerCaja.execute() // Print text
+
+  printerCaja.beep() // Beep the buzzer
 
   // Limpiar la impresora
   printerCaja.clear()
