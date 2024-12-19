@@ -39,9 +39,6 @@ async function imprimirTicketComanda (pedido) {
   console.log(pedido)
   console.log('---------------------------------------')
 
-  //categoria 30 no se imprime
-
-
 
 
   await printer.printImage(logo)
@@ -51,6 +48,8 @@ async function imprimirTicketComanda (pedido) {
   printer.print(`Mesa: ${MesaDescripcion}  |`)
   printer.println(`Mesero: ${quitarAcentos(Mesero)}`)
   printer.drawLine()
+
+  
 
   const imprimirProducto = (producto, printerInstance) => {
     printerInstance.alignLeft()
@@ -175,11 +174,24 @@ async function imprimirCuentaMesero (pedido) {
 }
 
 async function imprimirPrueba () {
-  printer.alignCenter()
-  printer.println('Hola mundo')
-  printer.cut()
-  printer.execute()
-  printer.clear()
+
+  printerCaja.alignCenter()
+  printerCaja.newLine()
+  printerCaja.print(`Mesa: ${MesaDescripcion}  |`)
+  printerCaja.println(`Mesero: ${quitarAcentos(Mesero)}`)
+  printerCaja.drawLine()
+
+  // imprimir hora y fecha
+  const fecha = new Date()
+  printerCaja.println(fecha.toLocaleDateString())
+  printerCaja.drawLine()
+  printerCaja.cut()
+  printerCaja.execute()
+
+  // Limpiar la impresora
+  printerCaja.clear()
+
+
 
   return 'ok'
 }
