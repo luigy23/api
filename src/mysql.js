@@ -728,13 +728,16 @@ SELECT movimientos.*,
        mesa.Descripcion AS Mesa, 
        pedido.Usuario AS Usuario, 
        factura.Subtotal AS Subtotal, 
-       factura.Propina AS Propina
+       factura.Propina AS Propina, 
+       metodospago.Nombre AS MetodoPago
 FROM movimientos
 LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
 LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
 LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+LEFT JOIN metodospago ON factura.idMetodoPago = metodospago.idMetodoPago
 WHERE movimientos.idCaja = ?
-ORDER BY FechaHora DESC;
+ORDER BY movimientos.FechaHora DESC;
+
 `;
   const values = [idCaja];
   return new Promise((resolve, reject) => {
@@ -750,16 +753,19 @@ ORDER BY FechaHora DESC;
 }
 function getTodosMovimientos() {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, 
+SELECT movimientos.*, 
        mesa.Descripcion AS Mesa, 
        factura.Usuario AS Usuario, 
        factura.Subtotal AS Subtotal, 
-       factura.Propina AS Propina
+       factura.Propina AS Propina, 
+       metodospago.Nombre AS MetodoPago
 FROM movimientos
 LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
 LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
 LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
-ORDER BY FechaHora DESC;
+LEFT JOIN metodospago ON factura.idMetodoPago = metodospago.idMetodoPago
+ORDER BY movimientos.FechaHora DESC;
+
 `;
   return new Promise((resolve, reject) => {
     connection.query(sqlObtenerMovimientos, function (error, resultado) {
@@ -770,18 +776,21 @@ ORDER BY FechaHora DESC;
 }
 function getMovimientosFiltrados(fechaInicio, fechaFin, tipoMovimiento) {
   const sqlObtenerMovimientos = `
-  SELECT movimientos.*, 
+SELECT movimientos.*, 
        mesa.Descripcion AS Mesa, 
        factura.Usuario AS Usuario, 
        factura.Subtotal AS Subtotal, 
-       factura.Propina AS Propina
+       factura.Propina AS Propina, 
+       metodospago.Nombre AS MetodoPago
 FROM movimientos
 LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
 LEFT JOIN pedido ON factura.idPedido = pedido.idPedido
 LEFT JOIN mesa ON pedido.idMesa = mesa.idMesa
+LEFT JOIN metodospago ON factura.idMetodoPago = metodospago.idMetodoPago
 WHERE DATE(movimientos.FechaHora) BETWEEN ? AND ?
   AND movimientos.Tipo = ?
-ORDER BY movimientos.FechaHora DESC;`;
+ORDER BY movimientos.FechaHora DESC;
+`;
   const values = [fechaInicio, fechaFin, tipoMovimiento];
   return new Promise((resolve, reject) => {
     connection.query(
