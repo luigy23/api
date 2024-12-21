@@ -578,6 +578,7 @@ function insertarFactura(factura) {
     fecha,
     estado,
     propina,
+    comentario,
   ];
 
   return new Promise((resolve, reject) => {
