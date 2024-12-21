@@ -557,11 +557,12 @@ function insertarFactura(factura) {
     fecha,
     estado,
     propina,
+    comentario,
   } = factura;
 
   const sqlInsertarFactura = `INSERT INTO factura
-      (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado, Propina)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (idPedido, idCaja, Subtotal, Descuento, IVA, Total, idMetodoPago, Recibido, Cambio, Usuario, Fecha, Estado, Propina, Comentario)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
 
   const values = [
     idPedido,

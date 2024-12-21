@@ -2,7 +2,7 @@ const con = require("../mysql.js");
 const io = require("../routes/socketio");
 
 async function crearFactura(req, res) {
-  const { mesa, idMetodoPago,  recibido, descuento, propina, total, subtotal } = req.body;
+  const { mesa, idMetodoPago,  recibido, descuento, propina, total, subtotal, comentario } = req.body;
   console.log("--------FACTURA--------");
   console.log(req.body);
   console.log("-----------------------");
@@ -35,6 +35,7 @@ async function crearFactura(req, res) {
       fecha: new Date(),
       estado: "Pagado",
       propina,
+      comentario,
     };
 
     const resultado = await insertarFacturaYActualizarCaja(
