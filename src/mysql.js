@@ -760,6 +760,7 @@ SELECT movimientos.*,
        factura.Usuario AS Usuario, 
        factura.Subtotal AS Subtotal, 
        factura.Propina AS Propina, 
+       factura.Comentario AS Comentario,
        metodospago.Nombre AS MetodoPago
 FROM movimientos
 LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
@@ -782,7 +783,8 @@ SELECT movimientos.*,
        mesa.Descripcion AS Mesa, 
        factura.Usuario AS Usuario, 
        factura.Subtotal AS Subtotal, 
-       factura.Propina AS Propina, 
+       factura.Propina AS Propina,
+       factura.Comentario AS Comentario, 
        metodospago.Nombre AS MetodoPago
 FROM movimientos
 LEFT JOIN factura ON movimientos.NumFactura = factura.NumFactura
