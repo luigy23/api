@@ -835,6 +835,17 @@ function obtenerVentasMeseros(fechas) {
   );
 }
 
+function obtenerVentasTipoPago(fechas, tipoPago) {
+  const sqlObtenerVentasTipoPago = `SELECT COUNT(*) AS Cantidad, SUM(Total) AS Total FROM factura WHERE Estado = 'Pagado' AND idMetodoPago = ? AND Fecha BETWEEN ? AND ?;`;
+  const values = [tipoPago, fechas.fechaInicio, fechas.fechaFin];
+  return new Promise((resolve, reject) => {
+    connection.query(sqlObtenerVentasTipoPago, values, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  });
+}
+
 
 
 
