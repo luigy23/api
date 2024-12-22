@@ -58,9 +58,13 @@ async function nuevoPedido(req, res) {
       io.actualizarPedidos();
       await con.actualizarEstadoMesa(idMesa, "Ocupado");
       io.actualizarMesas();
-      if (pedido.Imprimir){
+
+      if (pedido.Imprimir == 1){
       await imprimirTicketComanda(pedido);
+      
+      
     }
+    console.log("Imprimir:",pedido.Imprimir);
       res.json({ mensaje: 'Pedido Enviado' });
     } catch (error) {
       console.log(error);
