@@ -177,7 +177,8 @@ async function imprimirCuentaMesero (pedido) {
 
 async function imprimirPrueba () {
 
-  printerCaja.alignCenter()
+  try{
+  await printerCaja.alignCenter()
   printerCaja.newLine()
   printerCaja.bold(true)
   printerCaja.println('Ticket de prueba')
@@ -195,9 +196,53 @@ async function imprimirPrueba () {
   // Limpiar la impresora
   printerCaja.clear()
 
+  //imprimir en las otras impresoras
+  await printer.alignCenter()
+  printer.newLine()
+  printer.bold(true)
+  printer.println('Ticket de prueba')
+  printer.drawLine()
+
+  // imprimir hora y fecha
+  printer.println(fecha.toLocaleDateString())
+  printer.drawLine()
+  printer.cut()
+  printer.execute() // Print text
+
+  printer.beep() // Beep the buzzer
+
+  // Limpiar la impresora
+  printer.clear()
+
+  await printerBebidas.alignCenter()
+  printerBebidas.newLine()
+  printerBebidas.bold(true)
+  printerBebidas.println('Ticket de prueba')
+  printerBebidas.drawLine()
+
+  // imprimir hora y fecha
+  printerBebidas.println(fecha.toLocaleDateString())
+  printerBebidas.drawLine()
+  printerBebidas.cut()
+  printerBebidas.execute() // Print text
+
+  printerBebidas.beep() // Beep the buzzer
+
+  // Limpiar la impresora
+  printerBebidas.clear()}
+  catch (error) {
+    console.error("Error en imprimirPrueba: ", error)
+    return 'hay un error'
+  }
+  finally{
+    return 'impreso'
+  }
 
 
-  return 'ok'
+
+
+
+
 }
 
 module.exports = {

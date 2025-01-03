@@ -128,8 +128,12 @@ router.get('/sockets', async (req, res) =>{
 
 })
 router.get('/test', async (req, res) => {
+  const respuesta = await
    imprimirPrueba()
-  res.json("Test")
+  res.json(respuesta)
+ 
+
+
   
   })
 
