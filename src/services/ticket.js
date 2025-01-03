@@ -1,9 +1,6 @@
 const { ThermalPrinter, PrinterTypes, CharacterSet } = require('node-thermal-printer') // Import
 const path = require('path')
 
-try {
-  
-
 
 // permitir impresión de caracteres especiales y acentos
 const printer = new ThermalPrinter({
@@ -97,8 +94,12 @@ async function imprimirTicketComanda (pedido) {
 }
 
 async function imprimirCuentaMesero (pedido) {
+  try {
   const { mesa, Mesero, productos, idPedido } = pedido
 
+  if (!printerCaja) {
+    throw new Error('Impresora no inicializada')
+  }
   const nombreMesero = Mesero.nombre ? Mesero.nombre : Mesero.user
 
   printerCaja.alignCenter()
@@ -173,6 +174,14 @@ async function imprimirCuentaMesero (pedido) {
 
   // limpiar la impresora
   printerCaja.clear()
+}
+catch (error) {
+  console.error("Error en imprimirCuentaMesero: ", error)
+  return 'hay un error'
+
+}
+
+
 }
 
 async function imprimirPrueba () {
@@ -250,7 +259,4 @@ module.exports = {
   imprimirCuentaMesero,
   imprimirPrueba
 
-}
-} catch (error) {
-  console.error(error)
 }

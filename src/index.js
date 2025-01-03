@@ -14,6 +14,27 @@ const path = require('path')
 app.set('port', process.env.PORT || 4000)
 app.set('json spaces', 2)
 // middlewares
+//manejar errores
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('algo no funcionó bien')
+})
+
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Promesa rechazada no manejada:', reason);
+  // Registramos el error en un archivo log.json con su fecha y hora
+  const fecha = new Date().toLocaleString();
+  const fs = require('fs');
+  const path = require('path');
+  const logPath = path.join(__dirname, 'log.txt');
+  fs.append //append significa agregar
+  fs.appendFileSync(logPath, `Fecha: ${fecha}, Error: ${reason}\n`);
+
+
+
+
+});
 
 //cookies
  const cookieParser = require('cookie-parser')
