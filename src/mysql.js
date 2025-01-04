@@ -19,6 +19,18 @@ connection.query("SELECT 1 + 1 AS solution", function (err, rows, fields) {
   console.log("Connected to DB!");
 });
 
+
+//funcion con query personalizado
+function ejecutarSQLQuery(query) {
+  return new Promise((resolve, reject) => {
+    connection.query(query, function (error, resultado) {
+      if (error) reject(error);
+      else resolve(resultado);
+    });
+  }
+  );
+}
+
 //Metodos Login
 function login(usuario) {
   const sqlLogin = `SELECT * FROM usuarios WHERE Usuario = ?`;
@@ -1081,6 +1093,7 @@ async function restablecer() {
 }
 
 module.exports = {
+  ejecutarSQLQuery, 
   login,
   registrar,
   obtenerUsuario,

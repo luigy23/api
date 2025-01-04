@@ -1,2 +1,7 @@
 Fecha: 3/1/2025, 2:11:49 p. m., Error: Printer Error
 Fecha: 3/1/2025, 2:12:04 p. m., Error: Printer Error
+Fecha: 3/1/2025, 4:31:59 p. m., Error: TypeError: enviarMensajeGemini is not a function
+Fecha: 3/1/2025, 4:32:28 p. m., Error: TypeError: enviarMensajeGemini is not a function
+Fecha: 3/1/2025, 11:30:20 p. m., Error: TypeError: enviarMensajeGemini is not a function
+Fecha: 3/1/2025, 11:32:26 p. m., Error: TypeError: enviarMensajeGemini is not a function
+Fecha: 4/1/2025, 4:29:53 p. m., Error: Printer Error

@@ -23,7 +23,8 @@ const {io} = require('./socketio')
 const path = require('path');
 const { printText, imprimirTicketComanda, imprimirCuentaMesero, imprimirPrueba } = require('../services/ticket.js');
 const { ImprimirCuenta } = require('../controllers/cuenta.js');
-const reportes = require('../controllers/reportes.js')
+const reportes = require('../controllers/reportes.js');
+const { recibirMensaje, obtenerMensajes, limpiarMensajes } = require('../controllers/chat.js');
 
 router.get('/productos',productos.getProductos)
 router.put('/productos', upload.single('imagen'),productos.udtProducto)
@@ -112,6 +113,10 @@ router.post('/cuenta/imprimir',verficarToken, ImprimirCuenta);
 
 
 //otros
+router.get('/chat',verficarToken, obtenerMensajes)
+router.post('/chat',verficarToken, recibirMensaje)
+router.delete('/chat',verficarToken, limpiarMensajes)
+
 router.get('/reset', async (req, res) => {
 
 
