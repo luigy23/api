@@ -1,18 +1,18 @@
 const con = require("../mysql.js");
-const  io  = require("../routes/socketio");
+const io = require("../routes/socketio");
 const { imprimirTicketComanda } = require("../services/ticket.js");
 
 async function traerPedidos(req, res) {
-  
+
   const idPedido = parseInt(req.query.id);
-  
+
   const estado = req.query.estado || false;
   const limit = req.query.limit || false;
   let filtro = idPedido
     ? "WHERE idPedido = ?"
     : estado
-    ? "WHERE Estado = ?"
-    : ""
+      ? "WHERE Estado = ?"
+      : ""
   const values = idPedido ? [idPedido] : estado ? [estado] : [];
   const pedidos = await con.traerPedidos(filtro, values, limit);
 
@@ -33,105 +33,106 @@ async function verificarEstadoMesa(idMesa) {
 
 async function nuevoPedido(req, res) {
   try {
-    const idMesa = req.body.Mesa;
-    const pedido = req.body;
-
+    const { Mesa: idMesa, Productos, Imprimir } = req.body;
 
     if (!idMesa) {
       return res.status(400).json({ error: 'No se seleccionó mesa' });
     }
 
-    // Validar datos del pedido
-    if (!pedido || !pedido.Productos ) {
-      console.log(pedido);
-      return res.status(400).json({ error: 'Faltan datos del pedido' });
+    if (!Productos?.length) {
+      return res.status(400).json({ error: 'No hay productos en el pedido' });
     }
 
     const estadoMesa = await verificarEstadoMesa(idMesa);
     if (estadoMesa) {
-      return res.status(400).json({ error: 'La Mesa está ocupada' });
+      return res.status(400).json({ error: 'La mesa está ocupada' });
     }
 
-    try {
-      await con.nuevoPedido(pedido);
-      io.actualizarProductos();
-      io.actualizarPedidos();
-      await con.actualizarEstadoMesa(idMesa, "Ocupado");
-      io.actualizarMesas();
+    if (Imprimir === 1) {
+      const impresion = await imprimirTicketComanda(req.body);
+      if (impresion.error) {
+        console.error("Error al imprimir el pedido:", impresion.error);
+        return res.status(500).json({ error: 'Error al imprimir el pedido' });
+      }
+    }
 
-      if (pedido.Imprimir == 1){
-      await imprimirTicketComanda(pedido);
-      
-      
-    }
-    console.log("Imprimir:",pedido.Imprimir);
-      res.json({ mensaje: 'Pedido Enviado' });
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ error: 'Error al crear el pedido' });
-    }
+    await con.nuevoPedido(req.body);
+    await con.actualizarEstadoMesa(idMesa, "Ocupado");
+    
+    // Agrupar actualizaciones de socket
+    io.actualizarProductos();
+    io.actualizarPedidos();
+    io.actualizarMesas();
+
+    return res.json({ mensaje: 'Pedido enviado exitosamente' });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: 'Error al crear el pedido' });
+    console.error('Error en nuevoPedido:', error);
+    return res.status(500).json({ error: 'Error al crear el pedido' });
   }
 }
+
 async function añadirProductoPedido(req, res) {
-  const { idMesa, productos, Imprimir } = req.body;
-  const idPedido = await con.obtenerElPedidoDeUnaMesa(idMesa);
-  let cambio = await con.getCambiosPedido(idPedido);
-  cambio = cambio[0].Cambios+1;
-  console.log("Cambio:", cambio);
-
-   try {
-   await con.agregarProductosAlPedido(idPedido,productos,cambio)
-    io.actualizarPedidos()
-    con.udtCambiosPedido(idPedido,cambio)
-    con.actualizarEstadoPedido("Pendiente",idPedido)
-    io.actualizarProductos()
-    io.actualizarPedidos()
-    await con.actualizarEstadoMesa(idMesa, "Ocupado");
-    io.actualizarMesas()
-    console.log("Productos añadidos:", productos);
-
-    const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
-  
-    const MesaDescripcion = await con.traerMesas(idMesa) 
-    console.log("MesaDescripcion:", MesaDescripcion);
-       
-   
+  try {
+    const { idMesa, productos, Imprimir } = req.body;
     
-    const impresion = {
-         MesaDescripcion: MesaDescripcion[0].Descripcion,
-         Mesero: pedido[0].Usuario,
-         Productos: productos,
-       };
+    if (!idMesa || !productos?.length) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
 
-    if (Imprimir){
-      imprimirTicketComanda(impresion);}
-    
+    const idPedido = await con.obtenerElPedidoDeUnaMesa(idMesa);
+    const [mesaInfo] = await con.traerMesas(idMesa);
+    const [pedidoInfo] = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
+    const [{ Cambios }] = await con.getCambiosPedido(idPedido);
+    const nuevoCambio = Cambios + 1;
 
+    if (Imprimir === 1) {
+      const impresionDatos = {
+        MesaDescripcion: mesaInfo.Descripcion,
+        Mesero: pedidoInfo.Usuario,
+        Productos: productos,
+      };
+
+      const impresion = await imprimirTicketComanda(impresionDatos);
+      if (impresion.error) {
+        console.error("Error al imprimir el pedido:", impresion.error);
+        return res.status(500).json({ error: 'Error al imprimir el pedido' });
+      }
+    }
+
+    await Promise.all([
+      con.agregarProductosAlPedido(idPedido, productos, nuevoCambio),
+      con.udtCambiosPedido(idPedido, nuevoCambio),
+      con.actualizarEstadoPedido("Pendiente", idPedido),
+      con.actualizarEstadoMesa(idMesa, "Ocupado")
+    ]);
+
+    // Agrupar actualizaciones de socket
+    io.actualizarProductos();
+    io.actualizarPedidos();
+    io.actualizarMesas();
+
+    return res.json({ cambio: nuevoCambio });
   } catch (error) {
-    res.status(500).send("Error en el cambio");  }
-
-  return res.json(cambio)
+    console.error('Error en añadirProductoPedido:', error);
+    return res.status(500).json({ error: 'Error al añadir productos al pedido' });
+  }
 }
-
 async function productoListo(req, res) {
 
   console.log("PEDIDO LISTO req.body:", req.body);
 
-  const { idPedido, codProducto,idRegistro, Nombre } = req.body;
+  const { idPedido, codProducto, idRegistro, Nombre } = req.body;
   const response = await con.udtProductoPedido("Listo", idPedido, codProducto, idRegistro); //actualizamos el estado de un producto en un pedido
   await actualizarEstadoPedido(idPedido);
 
 
-  const filtro= "WHERE idPedido = ?"
+  const filtro = "WHERE idPedido = ?"
   const values = [idPedido]
   const pedido = await con.traerPedidos(filtro, values); //obtenemos el pedido para despues extraer el usuario
   console.log("Pedido:", pedido[0])
 
-  
-  io.enviarNotificacion({codProducto:Nombre, mesa:pedido[0].Descripcion, estado:"Listo"}, pedido[0].Usuario)
+
+  io.enviarNotificacion({ codProducto: Nombre, mesa: pedido[0].Descripcion, estado: "Listo" }, pedido[0].Usuario)
 
   io.actualizarPedidos()
 
@@ -147,12 +148,12 @@ async function productoCancelado(req, res) {
 
 
 
-  const filtro= "WHERE idPedido = ?"
+  const filtro = "WHERE idPedido = ?"
   const values = [idPedido]
   const pedido = await con.traerPedidos(filtro, values); //obtenemos el pedido para despues extraer el usuario
 
-  
-  io.enviarNotificacion({codProducto:Nombre, mesa:pedido[0].Descripcion, estado:"Cancelado"}, pedido[0].Usuario)
+
+  io.enviarNotificacion({ codProducto: Nombre, mesa: pedido[0].Descripcion, estado: "Cancelado" }, pedido[0].Usuario)
 
   await actualizarEstadoPedido(idPedido);
   io.actualizarProductos()
@@ -162,34 +163,34 @@ async function productoCancelado(req, res) {
 
 async function actualizarEstadoPedido(idPedido) {
   //const idPedido = await con.obtenerElPedidoDeUnaMesa(1);
-  console.log("IDPEDIDO:",idPedido)
+  console.log("IDPEDIDO:", idPedido)
   const idMesa = await con.getMesaDePedido(idPedido)
-  console.log("IDPMESA:",idMesa)
+  console.log("IDPMESA:", idMesa)
 
   const pendientes = await con.getEstadoPed_Productos(idPedido, "Pendiente");
 
   if (pendientes.length === 0) {
-    
+
     const entregados = await con.getEstadoPed_Productos(idPedido, "Listo");
 
     if (entregados.length > 0) {
       con.actualizarEstadoPedido("Entregado", idPedido);
       await con.actualizarEstadoMesa(idMesa, "Sin Pagar");
       io.actualizarMesas()
-        } else {
+    } else {
       con.actualizarEstadoPedido("Cancelado", idPedido);
       await con.actualizarEstadoMesa(idMesa, "Disponible");
-      
+
     }
     io.actualizarMesas()
 
   }
-  
+
 }
 //
 async function obtenerMeseroDePedido(req, res) {
   const idPedido = req.params.id;
-  console.log("IDPEDIDO:",idPedido)
+  console.log("IDPEDIDO:", idPedido)
   const pedido = await con.traerPedidos("WHERE idPedido = ?", [idPedido]);
   const mesero = pedido[0].Usuario;
 

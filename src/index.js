@@ -31,6 +31,10 @@ process.on('unhandledRejection', (reason, promise) => {
   fs.append //append significa agregar
   fs.appendFileSync(logPath, `Fecha: ${fecha}, Error: ${reason}\n`);
 
+  // Finalizamos el proceso con un código de error
+
+ process.exit(1);
+
 
 
 

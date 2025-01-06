@@ -1,3 +1,4 @@
+const { error } = require('console')
 const { ThermalPrinter, PrinterTypes, CharacterSet } = require('node-thermal-printer') // Import
 const path = require('path')
 
@@ -31,14 +32,31 @@ function quitarAcentos (texto) {
 
 async function imprimirTicketComanda (pedido) {
   const { MesaDescripcion, Mesero, Productos } = pedido
+  //verficamos datos
+  if (!MesaDescripcion || !Mesero || !Productos) {
+    return {error: 'Faltan datos para imprimir'}
+  }
 
-  console.log('----------------imprimiendo--------------')
-  console.log(pedido)
-  console.log('---------------------------------------')
+
+  const conectado = await printer.isPrinterConnected()
+  if (!conectado) {
+    return {error: 'Impresora no conectada'}
+  }
+
+  const conectadoBebidas = await printerBebidas.isPrinterConnected()
+  if (!conectadoBebidas) {
+    return {error: 'Impresora de bebidas no conectada'}
+  }
 
 
 
-  await printer.printImage(logo)
+
+
+
+  const imprirmirLogo = await printer.printImage(logo)
+  if (!imprirmirLogo) {
+    return {error: 'Error al imprimir logo'}
+  }
 
   printer.alignCenter()
   printer.newLine()
@@ -87,10 +105,18 @@ async function imprimirTicketComanda (pedido) {
 
   printer.drawLine()
   printer.cut()
-  printer.execute()
+  const impresion = await printer.execute()  // Executes all the commands. Returns success or throws error
+  if (!impresion) {
+    return {error: 'Error al imprimir'}
+  }
   printer.beep()
   // Limpiar la impresora
   printer.clear()
+
+  console.log('----------------imprimiendo-------------------------')
+  console.log(pedido)
+  console.log('------------------Correctamente---------------------')
+
 }
 
 async function imprimirCuentaMesero (pedido) {
