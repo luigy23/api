@@ -5,3 +5,21 @@ Fecha: 3/1/2025, 4:32:28 p. m., Error: TypeError: enviarMensajeGemini is not a 
 Fecha: 3/1/2025, 11:30:20 p. m., Error: TypeError: enviarMensajeGemini is not a function
 Fecha: 3/1/2025, 11:32:26 p. m., Error: TypeError: enviarMensajeGemini is not a function
 Fecha: 4/1/2025, 4:29:53 p. m., Error: Printer Error
+Fecha: 4/1/2025, 8:17:05 p. m., Error: Printer Error
+Fecha: 4/1/2025, 8:31:41 p. m., Error: Printer Error
+Fecha: 4/1/2025, 8:32:57 p. m., Error: Printer Error
+Fecha: 4/1/2025, 8:43:12 p. m., Error: Printer Error
+Fecha: 4/1/2025, 8:53:09 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:03:00 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:03:50 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:08:15 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:16:27 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:21:12 p. m., Error: Printer Error
+Fecha: 6/1/2025, 12:22:22 p. m., Error: Printer Error
+Fecha: 6/1/2025, 2:41:42 p. m., Error: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+Fecha: 6/1/2025, 2:42:04 p. m., Error: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+Fecha: 6/1/2025, 2:42:48 p. m., Error: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+Fecha: 6/1/2025, 2:44:39 p. m., Error: RangeError [ERR_HTTP_INVALID_STATUS_CODE]: Invalid status code: Error en el cambio
+Fecha: 9/1/2025, 7:30:04 p. m., Error: Printer Error
+Fecha: 9/1/2025, 7:30:10 p. m., Error: Printer Error
+Fecha: 9/1/2025, 7:30:14 p. m., Error: Printer Error

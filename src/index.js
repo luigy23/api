@@ -33,7 +33,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
   // Finalizamos el proceso con un código de error
 
- process.exit(1);
+// process.exit(1);
 
 
 

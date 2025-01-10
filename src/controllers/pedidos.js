@@ -198,6 +198,72 @@ async function obtenerMeseroDePedido(req, res) {
 }
 
 
+async function ReimprimirPedido(req, res) {
+  try {
+    const { idMesa, productos, mesa, Mesero } = req.body;
+
+    // Validaciones básicas
+    if (!mesa || !Mesero || !productos || !Array.isArray(productos)) {
+      return res.status(400).json({ 
+        error: 'Datos incompletos o inválidos para reimprimir el pedido' 
+      });
+    }
+
+    // Validar estructura de productos
+    const productosInvalidos = productos.filter(producto => 
+      !producto.Nombre || 
+      typeof producto.Precio !== 'number' || 
+      typeof producto.Cantidad !== 'number'
+    );
+
+    if (productosInvalidos.length > 0) {
+      return res.status(400).json({
+        error: 'Formato inválido en algunos productos',
+        productosInvalidos
+      });
+    }
+
+    // Transformar los productos al formato esperado por la impresora
+    const productosFormateados = productos.map(producto => ({
+      nombre: producto.Nombre,
+      precio: producto.Precio,
+      cantidad: producto.Cantidad,
+      comentario: producto.Comentario || '',
+      idCategoria: producto.idCategoria, // Asegúrate de que este campo exista
+      Estado: producto.EstadoDescendente1 // Por si necesitamos validar el estado
+    }));
+
+    // Formatear los datos para imprimirTicketComanda
+    const datosImpresion = {
+      MesaDescripcion: mesa,
+      Mesero,
+      Productos: productosFormateados
+    };
+
+    const impresion = await imprimirTicketComanda(datosImpresion);
+    
+    if (impresion.error) {
+      console.error("Error al reimprimir el pedido:", impresion.error);
+      return res.status(500).json({ 
+        error: 'Error al reimprimir el pedido',
+        detalles: impresion.error 
+      });
+    }
+
+    return res.json({ 
+      mensaje: 'Pedido reimprimido exitosamente',
+      mesa,
+      totalProductos: productos.length
+    });
+
+  } catch (error) {
+    console.error("Error inesperado al reimprimir:", error);
+    return res.status(500).json({ 
+      error: 'Error inesperado al procesar la reimpresión',
+      detalles: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
 
 module.exports = {
   traerPedidos,
@@ -206,5 +272,6 @@ module.exports = {
   actualizarEstadoPedido,
   nuevoPedido,
   añadirProductoPedido,
-  obtenerMeseroDePedido
+  obtenerMeseroDePedido,
+  ReimprimirPedido
 };

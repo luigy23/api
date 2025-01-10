@@ -470,8 +470,28 @@ function delProducto(idProducto) {
 }
 
 function getProductosPedido(idPedido) {
-  const sqlTraerProductos = `SELECT pro.Nombre, pro.Precio, det.Cantidad, det.Comentario,det.codProducto, det.Estado, det.idRegistro, ped.idPedido FROM pedido ped INNER JOIN pedido_productos det ON ped.idPedido=det.idPedido INNER JOIN productos pro ON det.codProducto=pro.codProducto INNER JOIN usuarios usu ON ped.Usuario=usu.Usuario  
-  WHERE ped.idPedido= ? ORDER BY Estado DESC`;
+  const sqlTraerProductos = `SELECT 
+    pro.Nombre, 
+    pro.Precio, 
+    pro.idCategoria, 
+    det.Cantidad, 
+    det.Comentario, 
+    det.codProducto, 
+    det.Estado, 
+    det.idRegistro, 
+    ped.idPedido 
+FROM 
+    pedido ped 
+INNER JOIN 
+    pedido_productos det ON ped.idPedido = det.idPedido 
+INNER JOIN 
+    productos pro ON det.codProducto = pro.codProducto 
+INNER JOIN 
+    usuarios usu ON ped.Usuario = usu.Usuario 
+WHERE 
+    ped.idPedido = ? 
+ORDER BY 
+    det.Estado DESC;`;
 
   return new Promise((resolve, reject) => {
     connection.query(
