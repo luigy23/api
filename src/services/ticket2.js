@@ -100,17 +100,17 @@ class ServicioImpresion {
 
       const bebidas = Productos.filter(producto => producto.idCategoria === 4);
       const otrosProductos = Productos.filter(producto => producto.idCategoria !== 4 && producto.idCategoria !== 30);
+        // Imprimir ticket de cocina
+        if (otrosProductos.length > 0) {
+        await this.imprimirTicketCocina(otrosProductos, { numeroMesa: MesaDescripcion, mesero: Mesero });
+        }
 
       // Imprimir ticket de bebidas
       if (bebidas.length > 0) {
         await this.imprimirTicketBebidas(bebidas, { numeroMesa: MesaDescripcion, mesero: Mesero });
       }
 
-      // Imprimir ticket de cocina
-      if (otrosProductos.length > 0) {
-        await this.imprimirTicketCocina(otrosProductos, { numeroMesa: MesaDescripcion, mesero: Mesero });
-      }
-
+ 
       console.log('Pedido impreso exitosamente:', pedido);
       return { exito: true };
 
